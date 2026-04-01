@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+﻿import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 let windowIdCounter = 100;
@@ -7,30 +7,31 @@ export default function useWindowManager(loggedUser) {
   const [windowsState, setWindowsState] = useState([]);
   const windowsRef = useRef([]);
 
-  // --- Carregar Posições Iniciais ---
   useEffect(() => {
-    if (!loggedUser) {
-      const loginOnly = windowsState.filter(w => w.type === 'login');
-      setWindowsState(loginOnly);
-      windowsRef.current = loginOnly;
-      return;
-    }
+    // Ao trocar de usuário, remove tudo exceto a janela de login
+    setWindowsState(prev => prev.filter(w => w.type === 'login'));
+    windowsRef.current = windowsRef.current.filter(w => w.type === 'login');
+
+    if (!loggedUser) return;
+    
+    let isMounted = true;
+
     const loadDb = async () => {
        let parsed = [];
        if (loggedUser === 'Anônimo') {
          const w = localStorage.getItem('retronote_windows');
          if (w) parsed = JSON.parse(w);
-       } else {
+       } else if (loggedUser.id) {
          const { data } = await supabase.from('retronote_windows').select('*').eq('user_id', loggedUser.id).single();
          if (data && data.windows_json) parsed = data.windows_json;
        }
-       if (parsed && parsed.length > 0) {
+       
+       if (isMounted && parsed && parsed.length > 0) {
            setWindowsState(prev => {
               const activeIds = new Set(parsed.map(p => p.id));
               const prevKept = prev.filter(p => !activeIds.has(p.id) && p.type === 'login');
-              const next = [...parsed, ...prevKept]; // Prioriza itens carregados no array map
+              const next = [...parsed, ...prevKept];
               windowsRef.current = next;
-              // Sync highest ID sequence to prevent overlap bugs next spawn
               const maxId = Math.max(100, ...parsed.map(w => parseInt(w.id.replace('win-', '')) || 0));
               windowIdCounter = maxId;
               return next;
@@ -38,22 +39,21 @@ export default function useWindowManager(loggedUser) {
        }
     };
     loadDb();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { isMounted = false; };
   }, [loggedUser]);
 
-  // --- Salvar Posições Automaticamente ---
   useEffect(() => {
     if (!loggedUser) return;
     const timeout = setTimeout(() => {
        const storable = windowsState.filter(w => w.type !== 'login');
        if (loggedUser === 'Anônimo') {
            localStorage.setItem('retronote_windows', JSON.stringify(storable));
-       } else {
+       } else if (loggedUser.id) {
            supabase.from('retronote_windows')
                    .upsert([{ user_id: loggedUser.id, windows_json: storable }])
                    .then();
        }
-    }, 1000); // 1s sync debounce
+    }, 1000);
     return () => clearTimeout(timeout);
   }, [windowsState, loggedUser]);
 
@@ -68,18 +68,14 @@ export default function useWindowManager(loggedUser) {
   const focusWindow = useCallback((id) => {
     setWindows((prev) => {
       const maxZ = Math.max(...prev.map((w) => w.zIndex), 10);
-      return prev.map((w) =>
-        w.id === id ? { ...w, zIndex: maxZ + 1 } : w
-      );
+      return prev.map((w) => w.id === id ? { ...w, zIndex: maxZ + 1 } : w);
     });
   }, [setWindows]);
 
   const restoreWindow = useCallback((id) => {
     setWindows((prev) => {
       const maxZ = Math.max(...prev.map((w) => w.zIndex), 10);
-      return prev.map((w) =>
-        w.id === id ? { ...w, minimized: false, zIndex: maxZ + 1 } : w
-      );
+      return prev.map((w) => w.id === id ? { ...w, minimized: false, zIndex: maxZ + 1 } : w);
     });
   }, [setWindows]);
 
@@ -137,14 +133,5 @@ export default function useWindowManager(loggedUser) {
     );
   }, [setWindows]);
 
-  return {
-    windows: windowsState,
-    openWindow,
-    closeWindow,
-    minimizeWindow,
-    restoreWindow,
-    toggleMaximize,
-    focusWindow,
-    updateWindow,
-  };
+  return { windows: windowsState, openWindow, closeWindow, minimizeWindow, restoreWindow, toggleMaximize, focusWindow, updateWindow };
 }
