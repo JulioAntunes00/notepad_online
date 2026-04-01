@@ -33,14 +33,14 @@ function App() {
 
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
-  // Verifica se já existe uma sessão ativa ao carregar
+  // Força o logout ao carregar a página para sempre pedir login
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setLoggedUser(session.user);
-      }
+    const initAuth = async () => {
+      // Desloga qualquer sessão anterior para garantir que comece limpo
+      await supabase.auth.signOut();
       setAuthChecked(true);
-    });
+    };
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
@@ -53,7 +53,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Abre a janela de login APENAS se não estiver logado e após verificar a sessão
+  // Abre a janela de login se não houver usuário logado
   useEffect(() => {
     if (!authChecked || loggedUser) return;
     
@@ -112,13 +112,13 @@ function App() {
 
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
-  // Se ainda estiver verificando a autenticação, não renderiza nada (evita "piscar" notas)
+  // Enquanto estiver limpando a sessão, mostra apenas o fundo
   if (!authChecked) return <div className="w-screen h-screen bg-[#3a6ea5]"></div>;
 
   return (
     <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none">
 
-      {/* Ícones da Área de Trabalho - Só aparecem se logado */}
+      {/* Ícones da Área de Trabalho - SÓ aparecem se loggedUser NÃO for nulo */}
       {loggedUser && (
         <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
           <DesktopIcon
@@ -157,46 +157,49 @@ function App() {
 
       {/* Camada de Janelas */}
       {windows.map((win) => {
-        if (win.type === 'notepad' && loggedUser) {
-          const noteId = win.context?.noteId;
-          const note = notes.find(n => n.id === noteId);
-          if (!note) return null;
+        // Notas e Lixeira só existem se estiver logado
+        if (loggedUser) {
+          if (win.type === 'notepad') {
+            const noteId = win.context?.noteId;
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return null;
+            return (
+              <NotepadWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                noteTitle={note.title}
+                initialContent={note.content}
+                onContentChange={(text) => updateNoteContent(note.id, text)}
+                onDeleteNote={() => handleDeleteNote(note.id)}
+                onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
+              />
+            );
+          }
 
-          return (
-            <NotepadWindow
-              key={win.id}
-              windowData={win}
-              onClose={closeWindow}
-              onMinimize={minimizeWindow}
-              onToggleMaximize={toggleMaximize}
-              onFocus={focusWindow}
-              onUpdate={updateWindow}
-              noteTitle={note.title}
-              initialContent={note.content}
-              onContentChange={(text) => updateNoteContent(note.id, text)}
-              onDeleteNote={() => handleDeleteNote(note.id)}
-              onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
-            />
-          );
+          if (win.type === 'recyclebin') {
+            return (
+              <RecycleBinWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                trashItems={trash}
+                onRestore={handleRestoreNote}
+                onEmptyTrash={emptyTrash}
+              />
+            );
+          }
         }
 
-        if (win.type === 'recyclebin' && loggedUser) {
-          return (
-            <RecycleBinWindow
-              key={win.id}
-              windowData={win}
-              onClose={closeWindow}
-              onMinimize={minimizeWindow}
-              onToggleMaximize={toggleMaximize}
-              onFocus={focusWindow}
-              onUpdate={updateWindow}
-              trashItems={trash}
-              onRestore={handleRestoreNote}
-              onEmptyTrash={emptyTrash}
-            />
-          );
-        }
-
+        // Janela de Login só existe se NÃO estiver logado
         if (win.type === 'login' && !loggedUser) {
           return (
             <LoginWindow
