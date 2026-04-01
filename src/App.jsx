@@ -33,30 +33,25 @@ function App() {
 
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
-  // Força o logout ao carregar a página para sempre pedir login
+  // Força logout ao carregar para garantir privacidade, mas permite carregar a interface
   useEffect(() => {
     const initAuth = async () => {
-      // Desloga qualquer sessão anterior para garantir que comece limpo
       await supabase.auth.signOut();
       setAuthChecked(true);
     };
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setLoggedUser(session.user);
-      } else {
-        setLoggedUser(null);
-      }
+      if (session?.user) setLoggedUser(session.user);
+      else if (loggedUser !== 'Anônimo') setLoggedUser(null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Abre a janela de login se não houver usuário logado
+  // Abre o login automaticamente se não houver usuário
   useEffect(() => {
     if (!authChecked || loggedUser) return;
-    
     const existing = windows.find(w => w.type === 'login');
     if (!existing) {
        const vw = window.innerWidth;
@@ -82,9 +77,7 @@ function App() {
   const handleRenameNote = (noteId, newTitle) => {
     updateNoteTitle(noteId, newTitle);
     const win = windows.find(w => w.context?.noteId === noteId);
-    if (win) {
-      updateWindow(win.id, { title: `${newTitle} - Bloco de Notas` });
-    }
+    if (win) updateWindow(win.id, { title: `${newTitle} - Bloco de Notas` });
   };
 
   const handleDeleteNote = (noteId) => {
@@ -103,103 +96,112 @@ function App() {
 
   const handleTaskbarClick = (id) => {
     const win = windows.find((w) => w.id === id);
-    if (win?.minimized) {
-      restoreWindow(id);
-    } else {
-      minimizeWindow(id);
-    }
+    if (win?.minimized) restoreWindow(id);
+    else minimizeWindow(id);
   };
 
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
-  // Enquanto estiver limpando a sessão, mostra apenas o fundo
-  if (!authChecked) return <div className="w-screen h-screen bg-[#3a6ea5]"></div>;
-
   return (
     <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none">
 
-      {/* Ícones da Área de Trabalho - SÓ aparecem se loggedUser NÃO for nulo */}
-      {loggedUser && (
-        <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
-          <DesktopIcon
-            label="+ Nova Nota"
-            iconSrc={NEW_DOCUMENT_ICON}
-            onDoubleClick={() => setIsNewDialogOpen(true)}
-          />
+      {/* Ícones da Área de Trabalho - SEMPRE VISÍVEIS */}
+      <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
+        
+        {/* + Nova Nota: Se não logado, foca no login */}
+        <DesktopIcon
+          label="+ Nova Nota"
+          iconSrc={NEW_DOCUMENT_ICON}
+          onDoubleClick={() => {
+            if (loggedUser) setIsNewDialogOpen(true);
+            else {
+              const loginWin = windows.find(w => w.type === 'login');
+              if (loginWin) focusWindow(loginWin.id);
+            }
+          }}
+        />
 
-          <DesktopIcon
-            label="Sair"
-            iconSrc={USER_ICON}
-            onDoubleClick={async () => {
-              await supabase.auth.signOut();
+        {/* Ícone de Conta/Sair */}
+        <DesktopIcon
+          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
+          iconSrc={USER_ICON}
+          onDoubleClick={async () => {
+            if (loggedUser) {
+              if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
               setLoggedUser(null);
-            }}
-          />
-          
-          <DesktopIcon
-            label="Lixeira"
-            iconSrc={trashIcon}
-            onDoubleClick={handleOpenRecycleBin}
-          />
+            } else {
+              const vw = window.innerWidth;
+              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+            }
+          }}
+        />
+        
+        <DesktopIcon
+          label="Lixeira"
+          iconSrc={trashIcon}
+          onDoubleClick={() => {
+            if (loggedUser) handleOpenRecycleBin();
+            else {
+              const loginWin = windows.find(w => w.type === 'login');
+              if (loginWin) focusWindow(loginWin.id);
+            }
+          }}
+        />
 
-          {notes.map(note => (
-            <DesktopIcon
-              key={note.id}
-              label={note.title}
-              iconSrc={NOTEPAD_ICON}
-              onDoubleClick={() => handleOpenNote(note)}
-              onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
-              isLarge={true}
-            />
-          ))}
-        </div>
-      )}
+        {/* Notas do Usuário: Só aparecem se houver alguém logado (mesmo que anônimo) */}
+        {loggedUser && notes.map(note => (
+          <DesktopIcon
+            key={note.id}
+            label={note.title}
+            iconSrc={NOTEPAD_ICON}
+            onDoubleClick={() => handleOpenNote(note)}
+            onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
+            isLarge={true}
+          />
+        ))}
+      </div>
 
       {/* Camada de Janelas */}
       {windows.map((win) => {
-        // Notas e Lixeira só existem se estiver logado
-        if (loggedUser) {
-          if (win.type === 'notepad') {
-            const noteId = win.context?.noteId;
-            const note = notes.find(n => n.id === noteId);
-            if (!note) return null;
-            return (
-              <NotepadWindow
-                key={win.id}
-                windowData={win}
-                onClose={closeWindow}
-                onMinimize={minimizeWindow}
-                onToggleMaximize={toggleMaximize}
-                onFocus={focusWindow}
-                onUpdate={updateWindow}
-                noteTitle={note.title}
-                initialContent={note.content}
-                onContentChange={(text) => updateNoteContent(note.id, text)}
-                onDeleteNote={() => handleDeleteNote(note.id)}
-                onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
-              />
-            );
-          }
-
-          if (win.type === 'recyclebin') {
-            return (
-              <RecycleBinWindow
-                key={win.id}
-                windowData={win}
-                onClose={closeWindow}
-                onMinimize={minimizeWindow}
-                onToggleMaximize={toggleMaximize}
-                onFocus={focusWindow}
-                onUpdate={updateWindow}
-                trashItems={trash}
-                onRestore={handleRestoreNote}
-                onEmptyTrash={emptyTrash}
-              />
-            );
-          }
+        if (win.type === 'notepad' && loggedUser) {
+          const noteId = win.context?.noteId;
+          const note = notes.find(n => n.id === noteId);
+          if (!note) return null;
+          return (
+            <NotepadWindow
+              key={win.id}
+              windowData={win}
+              onClose={closeWindow}
+              onMinimize={minimizeWindow}
+              onToggleMaximize={toggleMaximize}
+              onFocus={focusWindow}
+              onUpdate={updateWindow}
+              noteTitle={note.title}
+              initialContent={note.content}
+              onContentChange={(text) => updateNoteContent(note.id, text)}
+              onDeleteNote={() => handleDeleteNote(note.id)}
+              onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
+            />
+          );
         }
 
-        // Janela de Login só existe se NÃO estiver logado
+        if (win.type === 'recyclebin' && loggedUser) {
+          return (
+            <RecycleBinWindow
+              key={win.id}
+              windowData={win}
+              onClose={closeWindow}
+              onMinimize={minimizeWindow}
+              onToggleMaximize={toggleMaximize}
+              onFocus={focusWindow}
+              onUpdate={updateWindow}
+              trashItems={trash}
+              onRestore={handleRestoreNote}
+              onEmptyTrash={emptyTrash}
+            />
+          );
+        }
+
         if (win.type === 'login' && !loggedUser) {
           return (
             <LoginWindow
@@ -212,11 +214,10 @@ function App() {
             />
           );
         }
-
         return null;
       })}
 
-      {loggedUser && <Taskbar windows={windows} onWindowClick={handleTaskbarClick} />}
+      <Taskbar windows={windows} onWindowClick={handleTaskbarClick} />
 
       <NewNoteDialog
         isOpen={isNewDialogOpen}
