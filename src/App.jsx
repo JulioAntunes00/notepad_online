@@ -33,7 +33,6 @@ function App() {
 
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
-  // Força logout ao carregar para garantir privacidade, mas permite carregar a interface
   useEffect(() => {
     const initAuth = async () => {
       await supabase.auth.signOut();
@@ -49,7 +48,6 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Abre o login automaticamente se não houver usuário
   useEffect(() => {
     if (!authChecked || loggedUser) return;
     const existing = windows.find(w => w.type === 'login');
@@ -105,10 +103,8 @@ function App() {
   return (
     <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none">
 
-      {/* Ícones da Área de Trabalho - SEMPRE VISÍVEIS */}
+      {/* Ícones da Esquerda: Nova Nota, Lixeira e Notas */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
-        
-        {/* + Nova Nota: Se não logado, foca no login */}
         <DesktopIcon
           label="+ Nova Nota"
           iconSrc={NEW_DOCUMENT_ICON}
@@ -117,21 +113,6 @@ function App() {
             else {
               const loginWin = windows.find(w => w.type === 'login');
               if (loginWin) focusWindow(loginWin.id);
-            }
-          }}
-        />
-
-        {/* Ícone de Conta/Sair */}
-        <DesktopIcon
-          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
-          iconSrc={USER_ICON}
-          onDoubleClick={async () => {
-            if (loggedUser) {
-              if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
-              setLoggedUser(null);
-            } else {
-              const vw = window.innerWidth;
-              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
             }
           }}
         />
@@ -148,7 +129,6 @@ function App() {
           }}
         />
 
-        {/* Notas do Usuário: Só aparecem se houver alguém logado (mesmo que anônimo) */}
         {loggedUser && notes.map(note => (
           <DesktopIcon
             key={note.id}
@@ -159,6 +139,23 @@ function App() {
             isLarge={true}
           />
         ))}
+      </div>
+
+      {/* Ícone da Conta: Canto Superior Direito */}
+      <div className="absolute top-4 right-4">
+        <DesktopIcon
+          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
+          iconSrc={USER_ICON}
+          onDoubleClick={async () => {
+            if (loggedUser) {
+              if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
+              setLoggedUser(null);
+            } else {
+              const vw = window.innerWidth;
+              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+            }
+          }}
+        />
       </div>
 
       {/* Camada de Janelas */}

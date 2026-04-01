@@ -1,8 +1,5 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 
-/**
- * Janela da Lixeira - lista itens excluídos, permite restaurar ou esvaziar tudo.
- */
 export default function RecycleBinWindow({
   windowData,
   onClose,
@@ -17,7 +14,6 @@ export default function RecycleBinWindow({
   const { id, minimized, maximized, zIndex, x, y, width, height } = windowData;
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // ── Drag ──
   const handleDragStart = (e) => {
     if (maximized) return;
     e.preventDefault();
@@ -30,7 +26,6 @@ export default function RecycleBinWindow({
     document.addEventListener('mouseup', onUp);
   };
 
-  // ── Resize ──
   const handleResizeStart = (e, direction) => {
     if (maximized) return;
     e.preventDefault(); e.stopPropagation(); onFocus(id);
@@ -68,19 +63,24 @@ export default function RecycleBinWindow({
   ];
 
   const formatDate = (ts) => {
+    if (!ts) return '-';
     const d = new Date(ts);
     return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
   const daysLeft = (ts) => {
-    const remaining = 3 - ((Date.now() - ts) / (24 * 60 * 60 * 1000));
+    if (!ts) return '3 dias';
+    const deleteDate = new Date(ts).getTime();
+    if (isNaN(deleteDate)) return '3 dias';
+    
+    const remaining = 3 - ((Date.now() - deleteDate) / (24 * 60 * 60 * 1000));
     if (remaining < 0) return 'Expirando...';
     if (remaining < 1) return 'Menos de 1 dia';
     return `${Math.ceil(remaining)} dia(s)`;
   };
 
   return (
-    <div className="window absolute flex flex-col" style={windowStyle} onMouseDown={() => onFocus(id)}>
+    <div className="window absolute flex flex-col shadow-[2px_2px_15px_rgba(0,0,0,0.5)]" style={windowStyle} onMouseDown={() => onFocus(id)}>
       {!maximized && resizeHandles.map(h => (
         <div key={h.dir} className={h.cls} onMouseDown={(e) => handleResizeStart(e, h.dir)} />
       ))}
@@ -94,8 +94,7 @@ export default function RecycleBinWindow({
         </div>
       </div>
 
-      <div className="window-body flex-1 flex flex-col !m-[3px] overflow-hidden">
-        {/* Toolbar */}
+      <div className="window-body flex-1 flex flex-col !m-[3px] overflow-hidden bg-[#ece9d8]">
         <div className="flex items-center gap-2 px-2 py-1 bg-[#ece9d8] border-b border-[#aca899] text-[11px] select-none">
           <button
             className="px-3 py-0.5 text-[11px]"
@@ -110,7 +109,6 @@ export default function RecycleBinWindow({
           <span>{trashItems.length} item(ns)</span>
         </div>
 
-        {/* Table header */}
         <div className="flex items-center bg-[#ece9d8] border-b border-[#aca899] text-[11px] font-bold select-none px-2 py-[2px]">
           <span className="flex-1">Nome</span>
           <span className="w-[130px] text-center">Excluído em</span>
@@ -118,7 +116,6 @@ export default function RecycleBinWindow({
           <span className="w-[80px] text-center">Ação</span>
         </div>
 
-        {/* Items list */}
         <div className="flex-1 bg-white overflow-y-auto">
           {trashItems.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[#808080] text-sm">
@@ -143,14 +140,12 @@ export default function RecycleBinWindow({
           )}
         </div>
 
-        {/* Status bar */}
         <div className="status-bar !m-0 !py-1">
           <p className="status-bar-field">{trashItems.length} objeto(s)</p>
           <p className="status-bar-field">Exclusão automática: 3 dias</p>
         </div>
       </div>
 
-      {/* Confirmation dialog */}
       {showConfirm && (
         <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/20">
           <div className="window" style={{ width: 320 }} onClick={e => e.stopPropagation()}>
