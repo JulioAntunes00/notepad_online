@@ -9,7 +9,7 @@ export default function LoginWindow({
   onLogin,
 }) {
   const { id, minimized, zIndex, x, y, width, height } = windowData;
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -30,12 +30,13 @@ export default function LoginWindow({
   const handleLogin = async (e) => {
     e?.preventDefault();
     setError(''); setSuccess('');
-    if (!email || !password) return setError('Preencha e-mail e senha.');
+    if (!username || !password) return setError('Preencha login e senha.');
 
     try {
+      const email = username.includes('@') ? username : `${username.toLowerCase().replace(/\s+/g, '')}@retronote.local`;
       const { data, error: sbErr } = await supabase.auth.signInWithPassword({ email, password });
       
-      if (sbErr) return setError('E-mail ou senha incorretos.');
+      if (sbErr) return setError('Login ou senha incorretos.');
       
       if (data.user) {
         setSuccess(`Autenticado com sucesso.`);
@@ -47,13 +48,14 @@ export default function LoginWindow({
   const handleRegister = async (e) => {
     e?.preventDefault();
     setError(''); setSuccess('');
-    if (!email || !password) return setError('Preencha e-mail e senha para criar conta.');
+    if (!username || !password) return setError('Preencha login e senha para criar conta.');
 
     try {
+      const email = username.includes('@') ? username : `${username.toLowerCase().replace(/\s+/g, '')}@retronote.local`;
       const { data, error: insErr } = await supabase.auth.signUp({ email, password });
       
       if (insErr) {
-        if (insErr.message.includes('already registered')) return setError('E-mail já existe.');
+        if (insErr.message.includes('already registered')) return setError('Usuário já existe.');
         if (insErr.message.includes('Password should be')) return setError('A senha deve ter 6+ chars.');
         throw insErr;
       }
@@ -102,8 +104,8 @@ export default function LoginWindow({
             
             <form className="flex flex-col gap-3" onSubmit={handleLogin}>
               <div className="field-row">
-                <label htmlFor="user" className="w-12 text-right">E-mail:</label>
-                <input id="user" type="email" className="flex-1" value={email} onChange={e => setEmail(e.target.value)} />
+                <label htmlFor="user" className="w-12 text-right">Login:</label>
+                <input id="user" type="text" className="flex-1" value={username} onChange={e => setUsername(e.target.value)} />
               </div>
               
               <div className="field-row">
