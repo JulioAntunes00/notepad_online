@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import useWindowManager from './hooks/useWindowManager';
 import useNotes from './hooks/useNotes';
@@ -17,6 +17,7 @@ const USER_ICON = 'https://cdn-icons-png.flaticon.com/512/1077/1077063.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const {
     notes, trash,
@@ -32,37 +33,43 @@ function App() {
 
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
-  // Escuta oficial das sessões de Autenticação do Supabase
+  // Verifica se já existe uma sessão ativa ao carregar
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setLoggedUser(session.user);
+      if (session?.user) {
+        setLoggedUser(session.user);
+      }
+      setAuthChecked(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) setLoggedUser(session.user);
+      if (session?.user) {
+        setLoggedUser(session.user);
+      } else {
+        setLoggedUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Auto-chama a janela de Login como uma janela do sistema quando a página carrega pela primeira vez
+  // Abre a janela de login APENAS se não estiver logado e após verificar a sessão
   useEffect(() => {
-    if (loggedUser) return;
-    const vw = window.innerWidth;
+    if (!authChecked || loggedUser) return;
+    
     const existing = windows.find(w => w.type === 'login');
     if (!existing) {
+       const vw = window.innerWidth;
        openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loggedUser]);
+  }, [loggedUser, authChecked]);
 
-  const handleLoginSubmit = (username) => {
-    setLoggedUser(username);
+  const handleLoginSubmit = (user) => {
+    setLoggedUser(user);
     const win = windows.find(w => w.type === 'login');
     if (win) closeWindow(win.id);
   };
 
-  // ── Handlers de Notas ──
   const handleOpenNote = (note) => {
     openWindow('notepad', `${note.title} - Bloco de Notas`, { noteId: note.id });
   };
@@ -81,7 +88,6 @@ function App() {
   };
 
   const handleDeleteNote = (noteId) => {
-    // Fecha a janela associada antes de excluir
     const win = windows.find(w => w.context?.noteId === noteId);
     if (win) closeWindow(win.id);
     deleteNote(noteId);
@@ -91,12 +97,10 @@ function App() {
     restoreNote(noteId);
   };
 
-  // ── Handler da Lixeira ──
   const handleOpenRecycleBin = () => {
     openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
   };
 
-  // ── Taskbar toggle ──
   const handleTaskbarClick = (id) => {
     const win = windows.find((w) => w.id === id);
     if (win?.minimized) {
@@ -108,72 +112,52 @@ function App() {
 
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
+  // Se ainda estiver verificando a autenticação, não renderiza nada (evita "piscar" notas)
+  if (!authChecked) return <div className="w-screen h-screen bg-[#3a6ea5]"></div>;
+
   return (
     <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none">
-      
-      {/* Ícones da Área de Trabalho */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
-        
-        {/* + Nova Nota */}
-        <DesktopIcon
-          label="+ Nova Nota"
-          iconSrc={NEW_DOCUMENT_ICON}
-          onDoubleClick={() => setIsNewDialogOpen(true)}
-        />
-        
-        {/* Ícone da Conta (p/ reabrir login) */}
-        <DesktopIcon
-          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Conta: Anônimo' : `Sair`) : "Login"}
-          iconSrc={USER_ICON}
-          onDoubleClick={async () => {
-            if (loggedUser && loggedUser !== 'Anônimo') {
-              await supabase.auth.signOut();
-              setLoggedUser(null);
-            } else {
-              const vw = window.innerWidth;
-              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
-            }
-          }}
-        />
-        <DesktopIcon
-          label="Lixeira"
-          iconSrc={trashIcon}
-          onDoubleClick={handleOpenRecycleBin}
-        />
 
-        {/* Notas salvas */}
-        {notes.map(note => (
+      {/* Ícones da Área de Trabalho - Só aparecem se logado */}
+      {loggedUser && (
+        <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
           <DesktopIcon
-            key={note.id}
-            label={note.title}
-            iconSrc={NOTEPAD_ICON}
-            onDoubleClick={() => handleOpenNote(note)}
-            onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
-            isLarge={true}
+            label="+ Nova Nota"
+            iconSrc={NEW_DOCUMENT_ICON}
+            onDoubleClick={() => setIsNewDialogOpen(true)}
           />
-        ))}
-      </div>
 
-      {/* Ícone isolado Configurações/Perfil Canto Superior Direito */}
-      <div className="absolute top-4 right-4 flex flex-col items-end">
-        <DesktopIcon
-          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Visitante' : `Sair: ${loggedUser.email.split('@')[0]}`) : "Login"}
-          iconSrc={USER_ICON}
-          onDoubleClick={async () => {
-            if (loggedUser && loggedUser !== 'Anônimo') {
+          <DesktopIcon
+            label="Sair"
+            iconSrc={USER_ICON}
+            onDoubleClick={async () => {
               await supabase.auth.signOut();
               setLoggedUser(null);
-            } else {
-              const vw = window.innerWidth;
-              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
-            }
-          }}
-        />
-      </div>
+            }}
+          />
+          
+          <DesktopIcon
+            label="Lixeira"
+            iconSrc={trashIcon}
+            onDoubleClick={handleOpenRecycleBin}
+          />
+
+          {notes.map(note => (
+            <DesktopIcon
+              key={note.id}
+              label={note.title}
+              iconSrc={NOTEPAD_ICON}
+              onDoubleClick={() => handleOpenNote(note)}
+              onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
+              isLarge={true}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Camada de Janelas */}
       {windows.map((win) => {
-        if (win.type === 'notepad') {
+        if (win.type === 'notepad' && loggedUser) {
           const noteId = win.context?.noteId;
           const note = notes.find(n => n.id === noteId);
           if (!note) return null;
@@ -196,7 +180,7 @@ function App() {
           );
         }
 
-        if (win.type === 'recyclebin') {
+        if (win.type === 'recyclebin' && loggedUser) {
           return (
             <RecycleBinWindow
               key={win.id}
@@ -213,7 +197,7 @@ function App() {
           );
         }
 
-        if (win.type === 'login') {
+        if (win.type === 'login' && !loggedUser) {
           return (
             <LoginWindow
               key={win.id}
@@ -229,10 +213,10 @@ function App() {
         return null;
       })}
 
-      <Taskbar windows={windows} onWindowClick={handleTaskbarClick} />
+      {loggedUser && <Taskbar windows={windows} onWindowClick={handleTaskbarClick} />}
 
-      <NewNoteDialog 
-        isOpen={isNewDialogOpen} 
+      <NewNoteDialog
+        isOpen={isNewDialogOpen}
         onClose={() => setIsNewDialogOpen(false)}
         onCreate={handleCreateNote}
       />
