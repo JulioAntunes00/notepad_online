@@ -24,10 +24,10 @@ export default function useNotes(loggedUser) {
           if (savedT) setTrash(JSON.parse(savedT));
         } catch {}
       } else {
-        const { data: nData } = await supabase.from('retronote_notes').select('*').eq('username', loggedUser);
+        const { data: nData } = await supabase.from('retronote_notes').select('*').eq('user_id', loggedUser.id);
         if (nData) setNotes(nData);
         
-        const { data: tData } = await supabase.from('retronote_trash').select('*').eq('username', loggedUser);
+        const { data: tData } = await supabase.from('retronote_trash').select('*').eq('user_id', loggedUser.id);
         if (tData) {
           const now = Date.now();
           const toKeep = [];
@@ -66,7 +66,7 @@ export default function useNotes(loggedUser) {
     setNotes(prev => [...prev, newNote]);
     
     if (loggedUser && loggedUser !== 'Anônimo') {
-      supabase.from('retronote_notes').insert([{ id, username: loggedUser, title, content: '' }]).then();
+      supabase.from('retronote_notes').insert([{ id, user_id: loggedUser.id, title, content: '' }]).then();
     }
     return newNote;
   }, [loggedUser]);
@@ -100,7 +100,7 @@ export default function useNotes(loggedUser) {
       supabase.from('retronote_notes').delete().eq('id', id).then(() => {
         supabase.from('retronote_trash').insert([{ 
           id: noteToDelete.id, 
-          username: loggedUser, 
+          user_id: loggedUser.id, 
           title: noteToDelete.title, 
           content: noteToDelete.content,
           deleted_at: delAt
@@ -125,7 +125,7 @@ export default function useNotes(loggedUser) {
          // Create it back in notes
          supabase.from('retronote_notes').insert([{ 
            id: itemToRestore.id, 
-           username: loggedUser, 
+           user_id: loggedUser.id, 
            title: itemToRestore.title, 
            content: itemToRestore.content 
          }]).then();
@@ -143,7 +143,7 @@ export default function useNotes(loggedUser) {
   const emptyTrash = useCallback(() => {
     setTrash([]);
     if (loggedUser && loggedUser !== 'Anônimo') {
-      supabase.from('retronote_trash').delete().eq('username', loggedUser).then();
+      supabase.from('retronote_trash').delete().eq('user_id', loggedUser.id).then();
     }
   }, [loggedUser]);
 

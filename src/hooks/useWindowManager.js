@@ -21,7 +21,7 @@ export default function useWindowManager(loggedUser) {
          const w = localStorage.getItem('retronote_windows');
          if (w) parsed = JSON.parse(w);
        } else {
-         const { data } = await supabase.from('retronote_windows').select('*').eq('username', loggedUser).single();
+         const { data } = await supabase.from('retronote_windows').select('*').eq('user_id', loggedUser.id).single();
          if (data && data.windows_json) parsed = data.windows_json;
        }
        if (parsed && parsed.length > 0) {
@@ -50,7 +50,7 @@ export default function useWindowManager(loggedUser) {
            localStorage.setItem('retronote_windows', JSON.stringify(storable));
        } else {
            supabase.from('retronote_windows')
-                   .upsert([{ username: loggedUser, windows_json: storable }])
+                   .upsert([{ user_id: loggedUser.id, windows_json: storable }])
                    .then();
        }
     }, 1000); // 1s sync debounce

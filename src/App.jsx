@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 import useWindowManager from './hooks/useWindowManager';
 import useNotes from './hooks/useNotes';
 import Taskbar from './Taskbar';
@@ -30,6 +31,19 @@ function App() {
   } = useWindowManager(loggedUser);
 
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
+
+  // Escuta oficial das sessões de Autenticação do Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) setLoggedUser(session.user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) setLoggedUser(session.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Auto-chama a janela de Login como uma janela do sistema quando a página carrega pela primeira vez
   useEffect(() => {
@@ -107,7 +121,20 @@ function App() {
           onDoubleClick={() => setIsNewDialogOpen(true)}
         />
         
-        {/* Lixeira */}
+        {/* Ícone da Conta (p/ reabrir login) */}
+        <DesktopIcon
+          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Conta: Anônimo' : `Sair`) : "Login"}
+          iconSrc={USER_ICON}
+          onDoubleClick={async () => {
+            if (loggedUser && loggedUser !== 'Anônimo') {
+              await supabase.auth.signOut();
+              setLoggedUser(null);
+            } else {
+              const vw = window.innerWidth;
+              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+            }
+          }}
+        />
         <DesktopIcon
           label="Lixeira"
           iconSrc={trashIcon}
@@ -130,11 +157,16 @@ function App() {
       {/* Ícone isolado Configurações/Perfil Canto Superior Direito */}
       <div className="absolute top-4 right-4 flex flex-col items-end">
         <DesktopIcon
-          label={loggedUser ? `Conta: ${loggedUser}` : "Login"}
+          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Visitante' : `Sair: ${loggedUser.email.split('@')[0]}`) : "Login"}
           iconSrc={USER_ICON}
-          onDoubleClick={() => {
-            const vw = window.innerWidth;
-            openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+          onDoubleClick={async () => {
+            if (loggedUser && loggedUser !== 'Anônimo') {
+              await supabase.auth.signOut();
+              setLoggedUser(null);
+            } else {
+              const vw = window.innerWidth;
+              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+            }
           }}
         />
       </div>
