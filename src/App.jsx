@@ -18,6 +18,8 @@ const USER_ICON = 'https://cdn-icons-png.flaticon.com/512/1077/1077063.png';
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  // Controla se esta ABA específica já foi desbloqueada pelo login
+  const [tabUnlocked, setTabUnlocked] = useState(sessionStorage.getItem('retronote_unlocked') === 'true');
 
   const {
     notes, trash,
@@ -34,31 +36,62 @@ function App() {
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
   useEffect(() => {
-    const initAuth = async () => {
-      await supabase.auth.signOut();
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Só loga automaticamente se a aba já tiver sido desbloqueada antes (ex: num F5)
+      if (session?.user && sessionStorage.getItem('retronote_unlocked') === 'true') {
+        setLoggedUser(session.user);
+      } else if (session?.user && !tabUnlocked) {
+        // Se há uma sessão mas a aba é nova, NÃO logamos ainda para forçar o LoginWindow
+        setLoggedUser(null);
+      }
+      
+      // Se for Anônimo (visitante), verificamos se a aba estava desbloqueada
+      const wasAnon = sessionStorage.getItem('retronote_user_type') === 'Anônimo';
+      if (wasAnon && sessionStorage.getItem('retronote_unlocked') === 'true') {
+        setLoggedUser('Anônimo');
+      }
+
       setAuthChecked(true);
     };
-    initAuth();
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) setLoggedUser(session.user);
-      else if (loggedUser !== 'Anônimo') setLoggedUser(null);
+      // Sincroniza o estado apenas se a aba estiver desbloqueada ou for um logout
+      if (!session?.user) {
+        if (loggedUser !== 'Anônimo') {
+          setLoggedUser(null);
+          sessionStorage.removeItem('retronote_unlocked');
+          sessionStorage.removeItem('retronote_user_type');
+          setTabUnlocked(false);
+        }
+      } else if (session?.user && sessionStorage.getItem('retronote_unlocked') === 'true') {
+        setLoggedUser(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [tabUnlocked, loggedUser]);
 
+  // Abre o login automaticamente se a aba não estiver desbloqueada
   useEffect(() => {
     if (!authChecked || loggedUser) return;
+    
     const existing = windows.find(w => w.type === 'login');
     if (!existing) {
        const vw = window.innerWidth;
        openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
     }
-  }, [loggedUser, authChecked]);
+  }, [loggedUser, authChecked, windows, openWindow]);
 
   const handleLoginSubmit = (user) => {
+    // Desbloqueia esta aba especificamente
+    sessionStorage.setItem('retronote_unlocked', 'true');
+    sessionStorage.setItem('retronote_user_type', user === 'Anônimo' ? 'Anônimo' : 'Supabase');
+    setTabUnlocked(true);
     setLoggedUser(user);
+    
     const win = windows.find(w => w.type === 'login');
     if (win) closeWindow(win.id);
   };
@@ -103,7 +136,7 @@ function App() {
   return (
     <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none">
 
-      {/* Ícones da Esquerda: Nova Nota, Lixeira e Notas */}
+      {/* Ícones da Área de Trabalho - Sempre visíveis para dar contexto */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
         <DesktopIcon
           label="+ Nova Nota"
@@ -129,6 +162,7 @@ function App() {
           }}
         />
 
+        {/* Notas: Só aparecem quando logado/desbloqueado */}
         {loggedUser && notes.map(note => (
           <DesktopIcon
             key={note.id}
@@ -141,7 +175,6 @@ function App() {
         ))}
       </div>
 
-      {/* Ícone da Conta: Canto Superior Direito */}
       <div className="absolute top-4 right-4">
         <DesktopIcon
           label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
@@ -150,6 +183,9 @@ function App() {
             if (loggedUser) {
               if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
               setLoggedUser(null);
+              sessionStorage.removeItem('retronote_unlocked');
+              sessionStorage.removeItem('retronote_user_type');
+              setTabUnlocked(false);
             } else {
               const vw = window.innerWidth;
               openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
@@ -214,7 +250,7 @@ function App() {
         return null;
       })}
 
-      <Taskbar windows={windows} onWindowClick={handleTaskbarClick} />
+      {loggedUser && <Taskbar windows={windows} onWindowClick={handleTaskbarClick} />}
 
       <NewNoteDialog
         isOpen={isNewDialogOpen}
