@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+Ôªøimport { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('[Supabase] Vari·veis VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY n„o encontradas no ambiente.');
+  console.error('[Supabase Error] Vari√°veis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY n√£o encontradas!');
 }
 
 export const supabase = createClient(
