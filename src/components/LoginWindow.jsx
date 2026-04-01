@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { hashPassword, verifyPassword } from '../lib/crypto';
 
 export default function LoginWindow({
   windowData,
@@ -10,7 +9,7 @@ export default function LoginWindow({
   onLogin,
 }) {
   const { id, minimized, zIndex, x, y, width, height } = windowData;
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -31,23 +30,16 @@ export default function LoginWindow({
   const handleLogin = async (e) => {
     e?.preventDefault();
     setError(''); setSuccess('');
-    if (!username || !password) return setError('Preencha login e senha.');
+    if (!email || !password) return setError('Preencha e-mail e senha.');
 
     try {
-      const { data, error: sbErr } = await supabase
-        .from('retronote_users')
-        .select('*')
-        .eq('username', username)
-        .single();
-
-      if (sbErr || !data) return setError('Usuário não encontrado.');
+      const { data, error: sbErr } = await supabase.auth.signInWithPassword({ email, password });
       
-      const match = await verifyPassword(password, data.password);
-      if (match) {
-        setSuccess(`Autenticado como ${username}.`);
-        setTimeout(() => onLogin(username), 600);
-      } else {
-        setError('Senha incorreta.');
+      if (sbErr) return setError('E-mail ou senha incorretos.');
+      
+      if (data.user) {
+        setSuccess(`Autenticado com sucesso.`);
+        setTimeout(() => onLogin(data.user), 600);
       }
     } catch { setError('Erro de comunicação.'); }
   };
@@ -55,18 +47,19 @@ export default function LoginWindow({
   const handleRegister = async (e) => {
     e?.preventDefault();
     setError(''); setSuccess('');
-    if (!username || !password) return setError('Preencha login e senha para criar conta.');
+    if (!email || !password) return setError('Preencha e-mail e senha para criar conta.');
 
     try {
-      const { data: existing } = await supabase.from('retronote_users').select('username').eq('username', username).single();
-      if (existing) return setError('Usuário já existe. Faça login.');
-
-      const hashedPw = await hashPassword(password);
-      const { error: insErr } = await supabase.from('retronote_users').insert([{ username, password: hashedPw }]);
-      if (insErr) throw insErr;
+      const { data, error: insErr } = await supabase.auth.signUp({ email, password });
+      
+      if (insErr) {
+        if (insErr.message.includes('already registered')) return setError('E-mail já existe.');
+        if (insErr.message.includes('Password should be')) return setError('A senha deve ter 6+ chars.');
+        throw insErr;
+      }
 
       setSuccess('Cadastrado com sucesso!');
-      setTimeout(() => onLogin(username), 1000);
+      setTimeout(() => onLogin(data.user), 1000);
     } catch { setError('Erro ao comunicar com provedor.'); }
   };
 
@@ -109,8 +102,8 @@ export default function LoginWindow({
             
             <form className="flex flex-col gap-3" onSubmit={handleLogin}>
               <div className="field-row">
-                <label htmlFor="user" className="w-12 text-right">Login:</label>
-                <input id="user" type="text" className="flex-1" value={username} onChange={e => setUsername(e.target.value)} />
+                <label htmlFor="user" className="w-12 text-right">E-mail:</label>
+                <input id="user" type="email" className="flex-1" value={email} onChange={e => setEmail(e.target.value)} />
               </div>
               
               <div className="field-row">
