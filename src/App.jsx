@@ -18,8 +18,6 @@ const USER_ICON = 'https://cdn-icons-png.flaticon.com/512/1077/1077063.png';
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  // Controla se esta ABA específica já foi desbloqueada pelo login
-  const [tabUnlocked, setTabUnlocked] = useState(sessionStorage.getItem('retronote_unlocked') === 'true');
 
   const {
     notes, trash,
@@ -35,63 +33,42 @@ function App() {
 
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
+  // Inicialização simples: Verifica se há sessão ou se é visitante
   useEffect(() => {
-    const checkSession = async () => {
+    const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      // Só loga automaticamente se a aba já tiver sido desbloqueada antes (ex: num F5)
-      if (session?.user && sessionStorage.getItem('retronote_unlocked') === 'true') {
+      const wasAnon = sessionStorage.getItem('retronote_is_anon') === 'true';
+
+      if (session?.user) {
         setLoggedUser(session.user);
-      } else if (session?.user && !tabUnlocked) {
-        // Se há uma sessão mas a aba é nova, NÃO logamos ainda para forçar o LoginWindow
-        setLoggedUser(null);
-      }
-      
-      // Se for Anônimo (visitante), verificamos se a aba estava desbloqueada
-      const wasAnon = sessionStorage.getItem('retronote_user_type') === 'Anônimo';
-      if (wasAnon && sessionStorage.getItem('retronote_unlocked') === 'true') {
+      } else if (wasAnon) {
         setLoggedUser('Anônimo');
       }
-
       setAuthChecked(true);
     };
-    checkSession();
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      // Sincroniza o estado apenas se a aba estiver desbloqueada ou for um logout
-      if (!session?.user) {
-        if (loggedUser !== 'Anônimo') {
-          setLoggedUser(null);
-          sessionStorage.removeItem('retronote_unlocked');
-          sessionStorage.removeItem('retronote_user_type');
-          setTabUnlocked(false);
-        }
-      } else if (session?.user && sessionStorage.getItem('retronote_unlocked') === 'true') {
-        setLoggedUser(session.user);
-      }
+      if (session?.user) setLoggedUser(session.user);
+      else if (loggedUser !== 'Anônimo') setLoggedUser(null);
     });
 
     return () => subscription.unsubscribe();
-  }, [tabUnlocked, loggedUser]);
+  }, []);
 
-  // Abre o login automaticamente se a aba não estiver desbloqueada
+  // Abre o login se não houver ninguém, mas sem travar o resto
   useEffect(() => {
     if (!authChecked || loggedUser) return;
-    
-    const existing = windows.find(w => w.type === 'login');
-    if (!existing) {
-       const vw = window.innerWidth;
-       openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+    const hasLogin = windows.some(w => w.type === 'login');
+    if (!hasLogin) {
+      const vw = window.innerWidth;
+      openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
     }
-  }, [loggedUser, authChecked, windows, openWindow]);
+  }, [loggedUser, authChecked, windows.length]); // Verifica apenas se a quantidade de janelas mudou
 
   const handleLoginSubmit = (user) => {
-    // Desbloqueia esta aba especificamente
-    sessionStorage.setItem('retronote_unlocked', 'true');
-    sessionStorage.setItem('retronote_user_type', user === 'Anônimo' ? 'Anônimo' : 'Supabase');
-    setTabUnlocked(true);
+    if (user === 'Anônimo') sessionStorage.setItem('retronote_is_anon', 'true');
     setLoggedUser(user);
-    
     const win = windows.find(w => w.type === 'login');
     if (win) closeWindow(win.id);
   };
@@ -117,26 +94,12 @@ function App() {
     deleteNote(noteId);
   };
 
-  const handleRestoreNote = (noteId) => {
-    restoreNote(noteId);
-  };
-
-  const handleOpenRecycleBin = () => {
-    openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
-  };
-
-  const handleTaskbarClick = (id) => {
-    const win = windows.find((w) => w.id === id);
-    if (win?.minimized) restoreWindow(id);
-    else minimizeWindow(id);
-  };
-
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
   return (
     <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none">
 
-      {/* Ícones da Área de Trabalho - Sempre visíveis para dar contexto */}
+      {/* Ícones da Área de Trabalho sempre visíveis */}
       <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
         <DesktopIcon
           label="+ Nova Nota"
@@ -154,7 +117,7 @@ function App() {
           label="Lixeira"
           iconSrc={trashIcon}
           onDoubleClick={() => {
-            if (loggedUser) handleOpenRecycleBin();
+            if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
             else {
               const loginWin = windows.find(w => w.type === 'login');
               if (loginWin) focusWindow(loginWin.id);
@@ -162,7 +125,6 @@ function App() {
           }}
         />
 
-        {/* Notas: Só aparecem quando logado/desbloqueado */}
         {loggedUser && notes.map(note => (
           <DesktopIcon
             key={note.id}
@@ -181,11 +143,9 @@ function App() {
           iconSrc={USER_ICON}
           onDoubleClick={async () => {
             if (loggedUser) {
+              sessionStorage.removeItem('retronote_is_anon');
               if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
               setLoggedUser(null);
-              sessionStorage.removeItem('retronote_unlocked');
-              sessionStorage.removeItem('retronote_user_type');
-              setTabUnlocked(false);
             } else {
               const vw = window.innerWidth;
               openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
@@ -229,7 +189,7 @@ function App() {
               onFocus={focusWindow}
               onUpdate={updateWindow}
               trashItems={trash}
-              onRestore={handleRestoreNote}
+              onRestore={restoreNote}
               onEmptyTrash={emptyTrash}
             />
           );
@@ -250,7 +210,11 @@ function App() {
         return null;
       })}
 
-      {loggedUser && <Taskbar windows={windows} onWindowClick={handleTaskbarClick} />}
+      <Taskbar windows={windows} onWindowClick={(id) => {
+        const win = windows.find(w => w.id === id);
+        if (win?.minimized) restoreWindow(id);
+        else minimizeWindow(id);
+      }} />
 
       <NewNoteDialog
         isOpen={isNewDialogOpen}
