@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -6,47 +6,43 @@ const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 export default function useNotes(loggedUser) {
   const [notes, setNotes] = useState([]);
   const [trash, setTrash] = useState([]);
+  // Esta referência guarda para QUEM estamos exibindo notas no momento
+  const loadedForRef = useRef(null);
 
   useEffect(() => {
-    // Reset imediato ao trocar de usuário ou deslogar
+    // 1. Limpa tudo imediatamente ao trocar de usuário
     setNotes([]);
     setTrash([]);
+    loadedForRef.current = null;
 
     if (!loggedUser) return;
     
     let isMounted = true;
+    const currentUser = loggedUser === 'Anônimo' ? 'Anônimo' : (loggedUser.id || null);
 
     const loadDb = async () => {
-      if (loggedUser === 'Anônimo') {
+      if (currentUser === 'Anônimo') {
         try {
           const savedN = localStorage.getItem('retronote_notes');
           const savedT = localStorage.getItem('retronote_trash');
           if (isMounted) {
-            if (savedN) setNotes(JSON.parse(savedN));
-            if (savedT) setTrash(JSON.parse(savedT));
+            setNotes(savedN ? JSON.parse(savedN) : []);
+            setTrash(savedT ? JSON.parse(savedT) : []);
+            loadedForRef.current = 'Anônimo';
           }
         } catch {}
-      } else if (loggedUser.id) {
-        // Busca notas reais do Supabase
-        const { data: nData } = await supabase.from('retronote_notes').select('*').eq('user_id', loggedUser.id);
-        if (isMounted && nData) setNotes(nData);
+      } else if (currentUser) {
+        const { data: nData } = await supabase.from('retronote_notes').select('*').eq('user_id', currentUser);
+        const { data: tData } = await supabase.from('retronote_trash').select('*').eq('user_id', currentUser);
         
-        const { data: tData } = await supabase.from('retronote_trash').select('*').eq('user_id', loggedUser.id);
-        if (isMounted && tData) {
-          const now = Date.now();
-          const toKeep = [];
-          const toDelete = [];
-
-          tData.forEach(item => {
-            const delTime = new Date(item.deleted_at).getTime();
-            if (now - delTime > THREE_DAYS_MS) toDelete.push(item.id);
-            else toKeep.push(item);
-          });
-
-          if (toDelete.length > 0) {
-            supabase.from('retronote_trash').delete().in('id', toDelete).then();
+        if (isMounted) {
+          if (nData) setNotes(nData);
+          if (tData) {
+            const now = Date.now();
+            const toKeep = tData.filter(item => (now - new Date(item.deleted_at).getTime()) <= THREE_DAYS_MS);
+            setTrash(toKeep);
           }
-          setTrash(toKeep);
+          loadedForRef.current = currentUser;
         }
       }
     };
@@ -55,9 +51,9 @@ export default function useNotes(loggedUser) {
     return () => { isMounted = false; };
   }, [loggedUser]);
 
-  // Salva no localStorage APENAS se for Anônimo
+  // SINCRO: Salva no localStorage APENAS se tivermos CERTEZA que os dados são do Anônimo
   useEffect(() => {
-    if (loggedUser === 'Anônimo') {
+    if (loggedUser === 'Anônimo' && loadedForRef.current === 'Anônimo') {
       localStorage.setItem('retronote_notes', JSON.stringify(notes));
       localStorage.setItem('retronote_trash', JSON.stringify(trash));
     }
