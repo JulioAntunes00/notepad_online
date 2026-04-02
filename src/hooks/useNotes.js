@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -138,5 +138,52 @@ export default function useNotes(loggedUser) {
     }
   }, [loggedUser]);
 
-  return { notes, trash, addNote, updateNoteContent, updateNoteTitle, deleteNote, restoreNote, permanentDelete, emptyTrash };
+  const duplicateNote = useCallback(async (oldNote) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    const newTitle = `${oldNote.title} - Cópia`;
+    const newNote = {
+      id,
+      user_id: loggedUser === 'Anônimo' ? null : loggedUser.id,
+      title: newTitle,
+      content: oldNote.content,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    setNotes(prev => [...prev, newNote]);
+    if (loggedUser && loggedUser !== 'Anônimo') {
+      await supabase.from('retronote_notes').insert([{
+        id,
+        user_id: loggedUser.id,
+        title: newTitle,
+        content: oldNote.content
+      }]);
+    }
+    return newNote;
+  }, [loggedUser]);
+
+  const migrateToCloud = useCallback(async (newUser) => {
+    try {
+      const localNotesStr = localStorage.getItem('retronote_notes');
+      if (localNotesStr) {
+        const localN = JSON.parse(localNotesStr);
+        if (localN.length > 0) {
+          const insertPayload = localN.map(note => ({
+            id: note.id,
+            user_id: newUser.id,
+            title: note.title,
+            content: note.content
+          }));
+          await supabase.from('retronote_notes').upsert(insertPayload);
+          localStorage.removeItem('retronote_notes');
+          // Força também remover a flag de 'seen_welcome' para não aborrecer mais tarde
+          localStorage.removeItem('retronote_seen_welcome');
+        }
+      }
+    } catch (err) {
+      console.error('Falha na migração:', err);
+    }
+  }, []);
+
+  return { notes, trash, addNote, updateNoteContent, updateNoteTitle, deleteNote, restoreNote, permanentDelete, emptyTrash, migrateToCloud, duplicateNote };
 }
