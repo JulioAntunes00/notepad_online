@@ -7,6 +7,7 @@ import DesktopIcon from './components/DesktopIcon';
 import NotepadWindow from './components/NotepadWindow';
 import RecycleBinWindow from './components/RecycleBinWindow';
 import LoginWindow from './components/LoginWindow';
+import XPAlertWindow from './components/XPAlertWindow';
 
 const NOTEPAD_ICON = '/notepad-icon.png';
 const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
@@ -20,7 +21,7 @@ function App() {
 
   const {
     notes, trash,
-    addNote, updateNoteContent, updateNoteTitle,
+    addNote, updateNoteContent, updateNoteTitle, shareNote,
     deleteNote, restoreNote, permanentDelete, emptyTrash, migrateToCloud, duplicateNote
   } = useNotes(loggedUser);
 
@@ -71,18 +72,18 @@ function App() {
         const welcomeTitle = 'Bem Vindo!';
         const newNote = addNote(welcomeTitle);
         if (newNote) {
-          const welcomeContent = `Bem-vindo ao RetroNote XP! 🌠
-
-Suas anotações agora têm o visual clássico que amamos.
-
-⚠️ Cuidado: Sem login, seus dados ficam apenas no navegador. Se limpar os dados ou formatar o PC, as notas SUMIRÃO.
-
-💡 Por que criar conta?
-Para salvar tudo na nuvem e nunca mais perder nada! Acesse de qualquer lugar e fique seguro.
-
-Dica: Tente clicar com o botão direito nos ícones! 🖱️
-
-— Equipe RetroNote XP 🚀`;
+          const welcomeContent = `<div><b>Bem-vindo ao RetroNote XP! 🌠</b></div>
+<br>
+<div>Suas anotações agora têm o visual clássico que amamos.</div>
+<br>
+<div><b>⚠️ Cuidado:</b> Sem login, seus dados ficam apenas no navegador. Se limpar os dados ou formatar o PC, as notas <b>SUMIRÃO</b>.</div>
+<br>
+<div><b>💡 Por que criar conta?</b></div>
+<div>Para salvar tudo na nuvem e nunca mais perder nada! Acesse de qualquer lugar e fique seguro.</div>
+<br>
+<div><b>Dica:</b> Tente clicar com o botão direito nos ícones! 🖱️</div>
+<br>
+<div>— Equipe RetroNote XP 🚀</div>`;
           updateNoteContent(newNote.id, welcomeContent);
           const vw = window.innerWidth;
           const vh = window.innerHeight;
@@ -91,6 +92,19 @@ Dica: Tente clicar com o botão direito nos ícones! 🖱️
       }
     }
   }, [authChecked, loggedUser, addNote, openWindow, updateNoteContent]);
+
+  // Modo Visitante/Leitura removido.
+
+  const handleShowAlert = (title, message, type = 'info') => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    openWindow('alert', title, { message, type }, {
+      x: vw / 2 - 175,
+      y: vh / 2 - 75,
+      width: 350,
+      height: 150
+    });
+  };
 
   const handleLoginSubmit = async (user) => {
     if (loggedUser === 'Anônimo' && user !== 'Anônimo') {
@@ -234,6 +248,8 @@ Dica: Tente clicar com o botão direito nos ícones! 🖱️
                 onDeleteNote={() => handleDeleteNote(note.id)}
                 onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
                 onCreateNote={() => handleCreateNote()}
+                onShareNote={() => shareNote(note.id)}
+                onShowAlert={handleShowAlert}
               />
             );
           }
@@ -264,6 +280,16 @@ Dica: Tente clicar com o botão direito nos ícones! 🖱️
                 onFocus={focusWindow}
                 onUpdate={updateWindow}
                 onLogin={handleLoginSubmit}
+              />
+            );
+          }
+
+          if (win.type === 'alert') {
+            return (
+              <XPAlertWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
               />
             );
           }

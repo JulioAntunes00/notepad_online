@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 200;
@@ -16,6 +17,8 @@ export default function NotepadWindow({
   onDeleteNote,
   onRenameNote,
   onCreateNote,
+  onShareNote,
+  onShowAlert,
 }) {
   const { id, minimized, maximized, zIndex, x, y, width, height } = windowData;
   const [text, setText] = useState(initialContent || '');
@@ -139,22 +142,28 @@ export default function NotepadWindow({
     setShowRenameDialog(false);
   };
 
+  const handleShare = async () => {
+    // Compartilhamento temporariamente desativado
+    onShowAlert?.('Aviso', 'O compartilhamento está desativado no momento.', 'info');
+  };
+
   const editorRef = React.useRef(null);
   const mountInjected = React.useRef(false);
 
   // Injeção de conteúdo apenas na montagem inicial (Evita o apagão ao voltar para a aba)
   useEffect(() => {
     if (editorRef.current && !mountInjected.current) {
-      editorRef.current.innerHTML = initialContent || '';
+      // Sanitiza o HTML antes de injetar no DOM (Proteção contra XSS)
+      editorRef.current.innerHTML = DOMPurify.sanitize(initialContent || '');
       mountInjected.current = true;
       setText(initialContent || '');
     }
   }, [initialContent]);
 
   const handleInput = (e) => {
-    const htmlText = e.currentTarget.innerHTML;
+    const htmlText = DOMPurify.sanitize(e.currentTarget.innerHTML);
     setText(htmlText);
-    
+
     // updateActiveFormats chamado para manter o visual dos botões sincronizado durante a digitação
     updateActiveFormats();
   };
@@ -318,7 +327,12 @@ export default function NotepadWindow({
             )}
           </div>
 
-          <span className="px-2 h-full flex items-center hover:bg-[#316ac5] hover:text-white cursor-default mr-4">Compartilhar</span>
+          <span
+            className="px-2 h-full flex items-center hover:bg-[#316ac5] hover:text-white cursor-pointer mr-4"
+            onClick={handleShare}
+          >
+            Compartilhar
+          </span>
 
           {/* Barra de Ferramentas WordPad (B, I) */}
           <div className="flex items-center gap-1 border-l border-[#aca899] pl-2 h-[80%]">

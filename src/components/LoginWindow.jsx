@@ -1,4 +1,4 @@
-﻿﻿import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function LoginWindow({
@@ -52,7 +52,7 @@ export default function LoginWindow({
   const handleRegister = async (e) => {
     e?.preventDefault();
     setError(''); setSuccess('');
-    if (!username || password.length < 4) return setError('O login é obrigatório e a senha deve ter 4+ caracteres.');
+    if (!username || password.length < 8) return setError('O login é obrigatório e a senha deve ter 8+ caracteres.');
 
     try {
       const email = username.includes('@') ? username : username.toLowerCase().replace(/\s+/g, '') + '@retronote.local';
