@@ -86,7 +86,7 @@ export default function LoginWindow({
         </div>
       </div>
 
-      <div className="window-body flex-1 m-[3px] bg-blue-300 flex flex-col p-4 relative overflow-hidden">
+      <div className="window-body flex-1 m-[3px] bg-[#ece9d8] flex flex-col p-4 relative overflow-hidden">
         {showAnonAlert ? (
           <div className="flex flex-col h-full justify-between">
             <div className="flex gap-4 items-start">

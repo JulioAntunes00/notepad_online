@@ -5,8 +5,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[Supabase Error] Variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não encontradas!');
-} else {
-  console.log('[Supabase Config] Usando URL:', supabaseUrl.substring(0, 20) + '...', 'e Chave Anon (parcial):', supabaseAnonKey.substring(0, 10) + '...');
 }
 
 export const supabase = createClient(
