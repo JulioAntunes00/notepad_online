@@ -25,6 +25,14 @@ export default function NotepadWindow({
   const renameInputRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeFormats, setActiveFormats] = useState({ bold: false, italic: false });
+
+  const updateActiveFormats = () => {
+    setActiveFormats({
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic')
+    });
+  };
 
   // Refs para guardar os valores mais recentes para usar nos event listeners
   const latestText = useRef(text);
@@ -131,10 +139,88 @@ export default function NotepadWindow({
     setShowRenameDialog(false);
   };
 
+  const editorRef = React.useRef(null);
+  const mountInjected = React.useRef(false);
+
+  // Injeção de conteúdo apenas na montagem inicial (Evita o apagão ao voltar para a aba)
+  useEffect(() => {
+    if (editorRef.current && !mountInjected.current) {
+      editorRef.current.innerHTML = initialContent || '';
+      mountInjected.current = true;
+      setText(initialContent || '');
+    }
+  }, [initialContent]);
+
+  const handleInput = (e) => {
+    const htmlText = e.currentTarget.innerHTML;
+    setText(htmlText);
+    
+    // updateActiveFormats chamado para manter o visual dos botões sincronizado durante a digitação
+    updateActiveFormats();
+  };
+
+  const execCmd = (cmd) => {
+    editorRef.current?.focus();
+    document.execCommand(cmd, false, null);
+    // Pequeno atraso para garantir que o navegador atualizou o estado interno
+    requestAnimationFrame(() => {
+      updateActiveFormats();
+    });
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    if (html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // Função recursiva para limpar elementos e manter apenas as tags permitidas
+      const cleanNode = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+        const tagName = node.tagName.toLowerCase();
+        const allowedTags = ['b', 'strong', 'i', 'em', 'br'];
+        const blockTags = ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'];
+
+        let childrenContent = '';
+        node.childNodes.forEach(child => {
+          childrenContent += cleanNode(child);
+        });
+
+        if (allowedTags.includes(tagName)) {
+          return `<${tagName}>${childrenContent}</${tagName}>`;
+        }
+
+        // Se for um bloco (p, div, etc), adicionamos uma quebra de linha após o conteúdo dele
+        if (blockTags.includes(tagName)) {
+          return `<div>${childrenContent}</div>`;
+        }
+
+        return childrenContent;
+      };
+
+      const cleanedHtml = cleanNode(doc.body);
+      document.execCommand('insertHTML', false, cleanedHtml || text.replace(/\n/g, '<br>'));
+    } else {
+      document.execCommand('insertHTML', false, text.replace(/\n/g, '<br>'));
+    }
+  };
+
   const handleDownloadNote = (format = 'txt') => {
     const isDoc = format === 'doc';
+    const content = isDoc ? editorRef.current.innerHTML : editorRef.current.innerText;
     const mimeType = isDoc ? 'application/msword' : 'text/plain;charset=utf-8';
-    const blob = new Blob([text], { type: mimeType });
+
+    // Para Word (.doc), envolvemos em um HTML básico para garantir que reconheça a formatação
+    const finalContent = isDoc
+      ? `<html><head><meta charset="utf-8"></head><body>${content}</body></html>`
+      : content;
+
+    const blob = new Blob([finalContent], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -171,7 +257,9 @@ export default function NotepadWindow({
       ))}
 
       <div className="title-bar" onMouseDown={handleDragStart} style={{ cursor: maximized ? 'default' : 'move' }}>
-        <div className="title-bar-text truncate pr-2">{noteTitle} - Bloco de Notas</div>
+        <div className="title-bar-text truncate pr-2">
+          {noteTitle} - Bloco de Notas
+        </div>
         <div className="title-bar-controls shrink-0">
           <button aria-label="Minimize" onClick={() => onMinimize(id)} />
           <button aria-label="Maximize" onClick={() => onToggleMaximize(id)} />
@@ -180,9 +268,9 @@ export default function NotepadWindow({
       </div>
 
       <div className="window-body flex-1 flex flex-col !m-[3px] overflow-hidden">
-        {/* Menu bar estilo Windows XP */}
-        <div className="flex items-center px-1 py-[2px] bg-[#ece9d8] border-b border-[#aca899] text-[11px] select-none relative h-[22px]">
-          <div className="relative h-full flex items-center">
+        {/* Menu bar estilo Windows XP com Barra de Ferramentas */}
+        <div className="flex items-center px-1 py-[2px] bg-[#ece9d8] border-b border-[#aca899] text-[11px] select-none relative h-[26px]">
+          <div className="relative h-full flex items-center mr-2">
             <span
               className={`px-2 h-full flex items-center cursor-default ${menuOpen === 'arquivo' ? 'bg-[#316ac5] text-white' : 'hover:bg-[#316ac5] hover:text-white'}`}
               onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === 'arquivo' ? null : 'arquivo'); }}
@@ -229,15 +317,42 @@ export default function NotepadWindow({
               </div>
             )}
           </div>
-          <span className="px-2 h-full flex items-center hover:bg-[#316ac5] hover:text-white cursor-default">Compartilhar</span>
+
+          <span className="px-2 h-full flex items-center hover:bg-[#316ac5] hover:text-white cursor-default mr-4">Compartilhar</span>
+
+          {/* Barra de Ferramentas WordPad (B, I) */}
+          <div className="flex items-center gap-1 border-l border-[#aca899] pl-2 h-[80%]">
+            <button
+              className={`w-6 h-6 flex items-center justify-center font-bold text-[13px] border ${activeFormats.bold ? 'bg-[#d4d0c8] border-[#aca899] shadow-inner' : 'border-transparent hover:border-[#aca899] hover:bg-[#f0f0f0]'} active:shadow-inner`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                execCmd('bold');
+              }}
+              title="Negrito"
+            >B</button>
+            <button
+              className={`w-6 h-6 flex items-center justify-center italic text-[13px] border ${activeFormats.italic ? 'bg-[#d4d0c8] border-[#aca899] shadow-inner' : 'border-transparent hover:border-[#aca899] hover:bg-[#f0f0f0]'} active:shadow-inner`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                execCmd('italic');
+              }}
+              title="Itálico"
+            >I</button>
+          </div>
         </div>
 
-        <div className="flex-1 border border-[#aca899] bg-white overflow-hidden">
-          <textarea
-            className="w-full h-full resize-none border-none outline-none p-1 text-sm bg-transparent"
+        <div className="flex-1 border border-[#aca899] bg-white overflow-y-auto">
+          <div
+            ref={editorRef}
+            contentEditable
+            className="w-full min-h-full outline-none p-2 text-sm bg-transparent"
             style={{ fontFamily: "'Lucida Console', 'Courier New', monospace", fontSize: '13px' }}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+            onInput={handleInput}
+            onKeyUp={updateActiveFormats}
+            onMouseUp={updateActiveFormats}
+            onPaste={handlePaste}
             spellCheck={false}
           />
         </div>
@@ -248,7 +363,7 @@ export default function NotepadWindow({
             {isSaving ? (
               <>
                 <span>💾</span>
-                <span>Salvando na nuvem...</span>
+                <span>Salvando...</span>
               </>
             ) : (
               <span>Salvo autom.</span>

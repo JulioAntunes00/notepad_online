@@ -44,7 +44,7 @@ function App() {
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session?.user) {
         setLoggedUser(session.user);
       } else {
@@ -71,7 +71,7 @@ function App() {
         const welcomeTitle = 'Bem Vindo!';
         const newNote = addNote(welcomeTitle);
         if (newNote) {
-        const welcomeContent = `Bem-vindo ao RetroNote XP! 🌠
+          const welcomeContent = `Bem-vindo ao RetroNote XP! 🌠
 
 Suas anotações agora têm o visual clássico que amamos.
 
@@ -83,10 +83,10 @@ Para salvar tudo na nuvem e nunca mais perder nada! Acesse de qualquer lugar e f
 Dica: Tente clicar com o botão direito nos ícones! 🖱️
 
 — Equipe RetroNote XP 🚀`;
-        updateNoteContent(newNote.id, welcomeContent);
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, { x: Math.max(0, vw / 2 - 500), y: Math.max(0, vh / 2 - 300), width: 1000, height: 600 });
+          updateNoteContent(newNote.id, welcomeContent);
+          const vw = window.innerWidth;
+          const vh = window.innerHeight;
+          openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, { x: Math.max(0, vw / 2 - 500), y: Math.max(0, vh / 2 - 300), width: 1000, height: 600 });
         }
       }
     }
@@ -144,137 +144,137 @@ Dica: Tente clicar com o botão direito nos ícones! 🖱️
       {/* Container Principal que ocupa o resto do espaço */}
       <div className="flex-1 relative w-full h-full">
 
-      {/* Ícones da Área de Trabalho sempre visíveis */}
-      <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
-        <DesktopIcon
-          label="+ Nova Nota"
-          iconSrc={NEW_DOCUMENT_ICON}
-          onClick={() => {
-            if (loggedUser) handleCreateNote();
-            else {
-              const loginWin = windows.find(w => w.type === 'login');
-              if (loginWin) focusWindow(loginWin.id);
+        {/* Ícones da Área de Trabalho sempre visíveis */}
+        <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
+          <DesktopIcon
+            label="+ Nova Nota"
+            iconSrc={NEW_DOCUMENT_ICON}
+            onClick={() => {
+              if (loggedUser) handleCreateNote();
               else {
+                const loginWin = windows.find(w => w.type === 'login');
+                if (loginWin) focusWindow(loginWin.id);
+                else {
+                  const vw = window.innerWidth;
+                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+                }
+              }
+            }}
+            menuPos={activeMenu?.id === 'new-note' ? activeMenu : null}
+            onContextMenu={(pos) => setActiveMenu({ id: 'new-note', ...pos })}
+          />
+
+          <DesktopIcon
+            label="Lixeira"
+            iconSrc={trashIcon}
+            onClick={() => {
+              if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
+              else {
+                const loginWin = windows.find(w => w.type === 'login');
+                if (loginWin) focusWindow(loginWin.id);
+              }
+            }}
+            onEmptyTrash={emptyTrash}
+            menuPos={activeMenu?.id === 'trash' ? activeMenu : null}
+            onContextMenu={(pos) => setActiveMenu({ id: 'trash', ...pos })}
+          />
+
+          {loggedUser && notes.map(note => (
+            <DesktopIcon
+              key={note.id}
+              label={note.title}
+              iconSrc={NOTEPAD_ICON}
+              onClick={() => handleOpenNote(note)}
+              onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
+              onDuplicate={() => handleDuplicateNote(note)}
+              onDelete={() => handleDeleteNote(note.id)}
+              menuPos={activeMenu?.id === note.id ? activeMenu : null}
+              onContextMenu={(pos) => setActiveMenu({ id: note.id, ...pos })}
+            />
+          ))}
+        </div>
+
+        <div className="absolute top-4 right-4">
+          <DesktopIcon
+            label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
+            iconSrc={USER_ICON}
+            onClick={async () => {
+              if (loggedUser) {
+                sessionStorage.removeItem('retronote_is_anon');
+                if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
+                setLoggedUser(null);
+              } else {
                 const vw = window.innerWidth;
                 openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
               }
-            }
-          }}
-          menuPos={activeMenu?.id === 'new-note' ? activeMenu : null}
-          onContextMenu={(pos) => setActiveMenu({ id: 'new-note', ...pos })}
-        />
-        
-        <DesktopIcon
-          label="Lixeira"
-          iconSrc={trashIcon}
-          onClick={() => {
-            if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
-            else {
-              const loginWin = windows.find(w => w.type === 'login');
-              if (loginWin) focusWindow(loginWin.id);
-            }
-          }}
-          onEmptyTrash={emptyTrash}
-          menuPos={activeMenu?.id === 'trash' ? activeMenu : null}
-          onContextMenu={(pos) => setActiveMenu({ id: 'trash', ...pos })}
-        />
-
-        {loggedUser && notes.map(note => (
-          <DesktopIcon
-            key={note.id}
-            label={note.title}
-            iconSrc={NOTEPAD_ICON}
-            onClick={() => handleOpenNote(note)}
-            onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
-            onDuplicate={() => handleDuplicateNote(note)}
-            onDelete={() => handleDeleteNote(note.id)}
-            menuPos={activeMenu?.id === note.id ? activeMenu : null}
-            onContextMenu={(pos) => setActiveMenu({ id: note.id, ...pos })}
+            }}
+            menuPos={activeMenu?.id === 'auth' ? activeMenu : null}
+            onContextMenu={(pos) => setActiveMenu({ id: 'auth', ...pos })}
           />
-        ))}
-      </div>
+        </div>
 
-      <div className="absolute top-4 right-4">
-        <DesktopIcon
-          label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
-          iconSrc={USER_ICON}
-          onClick={async () => {
-            if (loggedUser) {
-              sessionStorage.removeItem('retronote_is_anon');
-              if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
-              setLoggedUser(null);
-            } else {
-              const vw = window.innerWidth;
-              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
-            }
-          }}
-          menuPos={activeMenu?.id === 'auth' ? activeMenu : null}
-          onContextMenu={(pos) => setActiveMenu({ id: 'auth', ...pos })}
-        />
-      </div>
+        {/* Camada de Janelas */}
+        {windows.map((win) => {
+          if (win.type === 'notepad' && loggedUser) {
+            const noteId = win.context?.noteId;
+            const note = notes.find(n => n.id === noteId);
+            if (!note) return null;
+            return (
+              <NotepadWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                noteTitle={note.title}
+                initialContent={note.content}
+                onContentChange={(text) => updateNoteContent(note.id, text)}
+                onDeleteNote={() => handleDeleteNote(note.id)}
+                onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
+                onCreateNote={() => handleCreateNote()}
+              />
+            );
+          }
 
-      {/* Camada de Janelas */}
-      {windows.map((win) => {
-        if (win.type === 'notepad' && loggedUser) {
-          const noteId = win.context?.noteId;
-          const note = notes.find(n => n.id === noteId);
-          if (!note) return null;
-          return (
-            <NotepadWindow
-              key={win.id}
-              windowData={win}
-              onClose={closeWindow}
-              onMinimize={minimizeWindow}
-              onToggleMaximize={toggleMaximize}
-              onFocus={focusWindow}
-              onUpdate={updateWindow}
-              noteTitle={note.title}
-              initialContent={note.content}
-              onContentChange={(text) => updateNoteContent(note.id, text)}
-              onDeleteNote={() => handleDeleteNote(note.id)}
-              onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
-              onCreateNote={() => handleCreateNote()}
-            />
-          );
-        }
+          if (win.type === 'recyclebin' && loggedUser) {
+            return (
+              <RecycleBinWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                trashItems={trash}
+                onRestore={restoreNote}
+                onEmptyTrash={emptyTrash}
+              />
+            );
+          }
 
-        if (win.type === 'recyclebin' && loggedUser) {
-          return (
-            <RecycleBinWindow
-              key={win.id}
-              windowData={win}
-              onClose={closeWindow}
-              onMinimize={minimizeWindow}
-              onToggleMaximize={toggleMaximize}
-              onFocus={focusWindow}
-              onUpdate={updateWindow}
-              trashItems={trash}
-              onRestore={restoreNote}
-              onEmptyTrash={emptyTrash}
-            />
-          );
-        }
+          if (win.type === 'login' && !loggedUser) {
+            return (
+              <LoginWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                onLogin={handleLoginSubmit}
+              />
+            );
+          }
+          return null;
+        })}
 
-        if (win.type === 'login' && !loggedUser) {
-          return (
-            <LoginWindow
-              key={win.id}
-              windowData={win}
-              onClose={closeWindow}
-              onFocus={focusWindow}
-              onUpdate={updateWindow}
-              onLogin={handleLoginSubmit}
-            />
-          );
-        }
-        return null;
-      })}
-
-      <Taskbar windows={windows} onWindowClick={(id) => {
-        const win = windows.find(w => w.id === id);
-        if (win?.minimized) restoreWindow(id);
-        else minimizeWindow(id);
-      }} />
+        <Taskbar windows={windows} onWindowClick={(id) => {
+          const win = windows.find(w => w.id === id);
+          if (win?.minimized) restoreWindow(id);
+          else minimizeWindow(id);
+        }} />
 
       </div>
     </div>
