@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿﻿import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import useWindowManager from './hooks/useWindowManager';
 import useNotes from './hooks/useNotes';
@@ -13,7 +13,7 @@ const NOTEPAD_ICON = '/notepad-icon.webp';
 const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
-const USER_ICON = 'https://cdn-icons-png.flaticon.com/512/1077/1077063.png';
+const USER_ICON = '/sair.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
