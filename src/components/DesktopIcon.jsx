@@ -4,10 +4,10 @@ import React, { useState, useRef, useEffect } from 'react';
  * Ícone de desktop estilo Windows XP.
  * @param {string} label - Nome exibido abaixo do ícone
  * @param {string} iconSrc - URL/path da imagem do ícone
- * @param {function} onDoubleClick - Callback ao dar duplo clique
+ * @param {function} onClick - Callback ao dar um clique
  * @param {function} onRename - Callback para renomear, recebe novo string (opcional)
  */
-export default function DesktopIcon({ label, iconSrc, onDoubleClick, onRename, isLarge = false }) {
+export default function DesktopIcon({ label, iconSrc, onClick, onRename, isLarge = false }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(label);
   const inputRef = useRef(null);
@@ -23,10 +23,10 @@ export default function DesktopIcon({ label, iconSrc, onDoubleClick, onRename, i
     }
   }, [isEditing]);
 
-  const handleDoubleClick = (e) => {
+  const handleClick = (e) => {
     if (isEditing) return;
     e.stopPropagation();
-    onDoubleClick();
+    onClick();
   };
 
   const handleKeyDown = (e) => {
@@ -71,7 +71,7 @@ export default function DesktopIcon({ label, iconSrc, onDoubleClick, onRename, i
       role="button"
       tabIndex={0}
       className="flex flex-col items-center w-20 p-1 rounded focus:outline-none group select-none"
-      onDoubleClick={handleDoubleClick}
+      onClick={handleClick}
       onKeyDown={handleWrapperKeyDown}
       onContextMenu={handleContextMenu}
       title={onRename ? `${label} (F2 ou Botão Direito para Renomear)` : label}

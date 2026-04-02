@@ -1,4 +1,4 @@
-﻿﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import useWindowManager from './hooks/useWindowManager';
 import useNotes from './hooks/useNotes';
@@ -9,7 +9,7 @@ import NewNoteDialog from './components/NewNoteDialog';
 import RecycleBinWindow from './components/RecycleBinWindow';
 import LoginWindow from './components/LoginWindow';
 
-const NOTEPAD_ICON = '/notepad-icon.webp';
+const NOTEPAD_ICON = '/notepad-icon.png';
 const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
@@ -104,7 +104,7 @@ function App() {
         <DesktopIcon
           label="+ Nova Nota"
           iconSrc={NEW_DOCUMENT_ICON}
-          onDoubleClick={() => {
+          onClick={() => {
             if (loggedUser) setIsNewDialogOpen(true);
             else {
               const loginWin = windows.find(w => w.type === 'login');
@@ -116,7 +116,7 @@ function App() {
         <DesktopIcon
           label="Lixeira"
           iconSrc={trashIcon}
-          onDoubleClick={() => {
+          onClick={() => {
             if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
             else {
               const loginWin = windows.find(w => w.type === 'login');
@@ -130,9 +130,8 @@ function App() {
             key={note.id}
             label={note.title}
             iconSrc={NOTEPAD_ICON}
-            onDoubleClick={() => handleOpenNote(note)}
+            onClick={() => handleOpenNote(note)}
             onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
-            isLarge={true}
           />
         ))}
       </div>
@@ -141,7 +140,7 @@ function App() {
         <DesktopIcon
           label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
           iconSrc={USER_ICON}
-          onDoubleClick={async () => {
+          onClick={async () => {
             if (loggedUser) {
               sessionStorage.removeItem('retronote_is_anon');
               if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
