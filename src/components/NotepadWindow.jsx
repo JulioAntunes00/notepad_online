@@ -22,15 +22,46 @@ export default function NotepadWindow({
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+
+  // Refs para guardar os valores mais recentes para usar nos event listeners
+  const latestText = useRef(text);
+  const latestOnContentChange = useRef(onContentChange);
+  useEffect(() => {
+    latestText.current = text;
+    latestOnContentChange.current = onContentChange;
+  });
 
   // Autosave debounce
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      onContentChange?.(text);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      if (text !== initialContent) {
+        onContentChange?.(text);
+      }
     }, 500);
-    return () => clearTimeout(timeout);
-  }, [text, onContentChange]);
+    return () => clearTimeout(debounceTimerRef.current);
+  }, [text, initialContent, onContentChange]);
 
+  // Força o salvamento ao trocar de aba ou fechar a janela
+  useEffect(() => {
+    const forceSave = () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (latestText.current !== initialContent) {
+        latestOnContentChange.current?.(latestText.current);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') forceSave();
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      forceSave(); // Salva ao desmontar o componente (fechar a janela)
+    };
+  }, [initialContent]);
   // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
