@@ -73,10 +73,26 @@ function App() {
         const welcomeTitle = 'Bem Vindo!';
         const newNote = addNote(welcomeTitle);
         if (newNote) {
-          updateNoteContent(newNote.id, 'TEXTO DE APRESENTAÇÃO AQUI');
-          const vw = window.innerWidth;
-          const vh = window.innerHeight;
-          openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, { x: Math.max(0, vw / 2 - 500), y: Math.max(0, vh / 2 - 300), width: 1000, height: 600 });
+        const welcomeContent = `Bem-vindo ao RetroNote XP! 🌠
+
+Este é o seu novo espaço nostálgico para organizar ideias, códigos e anotações com o visual clássico que marcou uma geração.
+
+⚠️ AVISO IMPORTANTE:
+Como você ainda não fez o login, suas notas estão sendo salvas apenas no seu computador (LocalStorage). Isso significa que, se você limpar os dados do navegador ou trocar de PC, suas notas serão PERDIDAS.
+
+💡 POR QUE CRIAR UMA CONTA?
+Ao clicar no ícone no topo ou na barra de aviso, você sincroniza tudo na nuvem:
+- Suas notas ficam seguras para sempre.
+- Acesse de qualquer dispositivo.
+- Recupere tudo mesmo que formate o computador.
+
+Explore o desktop, clique com o botão direito nos ícones e sinta a nostalgia!
+
+Equipe RetroNote XP 🚀`;
+        updateNoteContent(newNote.id, welcomeContent);
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, { x: Math.max(0, vw / 2 - 500), y: Math.max(0, vh / 2 - 300), width: 1000, height: 600 });
         }
       }
     }
