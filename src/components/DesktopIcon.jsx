@@ -79,7 +79,7 @@ export default function DesktopIcon({ label, iconSrc, onDoubleClick, onRename, i
       <img
         src={iconSrc}
         alt={label}
-        className={`${isLarge ? 'w-[76px] h-auto' : 'w-12 h-auto'} drop-shadow-[1px_2px_2px_rgba(0,0,0,0.5)] group-focus:brightness-75`}
+        className={`${isLarge ? 'w-[77px] h-auto' : 'w-12 h-auto'} drop-shadow-[1px_2px_2px_rgba(0,0,0,0.5)] group-focus:brightness-75`}
         draggable={false}
       />
       {isEditing ? (
