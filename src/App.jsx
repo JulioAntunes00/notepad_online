@@ -13,7 +13,7 @@ const NOTEPAD_ICON = '/notepad-icon.webp';
 const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
-const USER_ICON = 'https://icons.iconarchive.com/icons/deleket/soft-scraps/256/Button-Turn-Off-icon.png';
+const USER_ICON = 'https://cdn-icons-png.flaticon.com/512/1828/1828479.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
