@@ -60,15 +60,27 @@ export default function useNotes(loggedUser) {
   }, [notes, trash, loggedUser]);
 
   const addNote = useCallback((title) => {
+    let finalTitle = title;
+    if (!finalTitle || finalTitle.trim() === '') {
+      const baseName = 'Novo bloco de notas';
+      let counter = 1;
+      finalTitle = baseName;
+      
+      while (notes.some(n => n.title === finalTitle)) {
+        counter++;
+        finalTitle = `${baseName} ${counter}`;
+      }
+    }
+
     const id = `note-${Date.now()}`;
-    const newNote = { id, title, content: '' };
+    const newNote = { id, title: finalTitle, content: '' };
     setNotes(prev => [...prev, newNote]);
 
     if (loggedUser && loggedUser !== 'Anônimo') {
-      supabase.from('retronote_notes').insert([{ id, user_id: loggedUser.id, title, content: '' }]).then();
+      supabase.from('retronote_notes').insert([{ id, user_id: loggedUser.id, title: finalTitle, content: '' }]).then();
     }
     return newNote;
-  }, [loggedUser]);
+  }, [loggedUser, notes]);
 
   const updateNoteContent = useCallback((id, content) => {
     setNotes(prev => prev.map(n => n.id === id ? { ...n, content } : n));

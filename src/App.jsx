@@ -5,7 +5,6 @@ import useNotes from './hooks/useNotes';
 import Taskbar from './Taskbar';
 import DesktopIcon from './components/DesktopIcon';
 import NotepadWindow from './components/NotepadWindow';
-import NewNoteDialog from './components/NewNoteDialog';
 import RecycleBinWindow from './components/RecycleBinWindow';
 import LoginWindow from './components/LoginWindow';
 
@@ -31,7 +30,6 @@ function App() {
     focusWindow, updateWindow,
   } = useWindowManager(loggedUser);
 
-  const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null); // { id, x, y }
 
   // Fecha qualquer menu de contexto aberto ao clicar fora
@@ -75,20 +73,16 @@ function App() {
         if (newNote) {
         const welcomeContent = `Bem-vindo ao RetroNote XP! 🌠
 
-Este é o seu novo espaço nostálgico para organizar ideias, códigos e anotações com o visual clássico que marcou uma geração.
+Suas anotações agora têm o visual clássico que amamos.
 
-⚠️ AVISO IMPORTANTE:
-Como você ainda não fez o login, suas notas estão sendo salvas apenas no seu computador (LocalStorage). Isso significa que, se você limpar os dados do navegador ou trocar de PC, suas notas serão PERDIDAS.
+⚠️ Cuidado: Sem login, seus dados ficam apenas no navegador. Se limpar os dados ou formatar o PC, as notas SUMIRÃO.
 
-💡 POR QUE CRIAR UMA CONTA?
-Ao clicar no ícone no topo ou na barra de aviso, você sincroniza tudo na nuvem:
-- Suas notas ficam seguras para sempre.
-- Acesse de qualquer dispositivo.
-- Recupere tudo mesmo que formate o computador.
+💡 Por que criar conta?
+Para salvar tudo na nuvem e nunca mais perder nada! Acesse de qualquer lugar e fique seguro.
 
-Explore o desktop, clique com o botão direito nos ícones e sinta a nostalgia!
+Dica: Tente clicar com o botão direito nos ícones! 🖱️
 
-Equipe RetroNote XP 🚀`;
+— Equipe RetroNote XP 🚀`;
         updateNoteContent(newNote.id, welcomeContent);
         const vw = window.innerWidth;
         const vh = window.innerHeight;
@@ -156,10 +150,14 @@ Equipe RetroNote XP 🚀`;
           label="+ Nova Nota"
           iconSrc={NEW_DOCUMENT_ICON}
           onClick={() => {
-            if (loggedUser) setIsNewDialogOpen(true);
+            if (loggedUser) handleCreateNote();
             else {
               const loginWin = windows.find(w => w.type === 'login');
               if (loginWin) focusWindow(loginWin.id);
+              else {
+                const vw = window.innerWidth;
+                openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+              }
             }
           }}
           menuPos={activeMenu?.id === 'new-note' ? activeMenu : null}
@@ -235,6 +233,7 @@ Equipe RetroNote XP 🚀`;
               onContentChange={(text) => updateNoteContent(note.id, text)}
               onDeleteNote={() => handleDeleteNote(note.id)}
               onRenameNote={(newTitle) => handleRenameNote(note.id, newTitle)}
+              onCreateNote={() => handleCreateNote()}
             />
           );
         }
@@ -277,11 +276,6 @@ Equipe RetroNote XP 🚀`;
         else minimizeWindow(id);
       }} />
 
-    <NewNoteDialog
-        isOpen={isNewDialogOpen}
-        onClose={() => setIsNewDialogOpen(false)}
-        onCreate={handleCreateNote}
-      />
       </div>
     </div>
   );

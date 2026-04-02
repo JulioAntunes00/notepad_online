@@ -15,6 +15,7 @@ export default function NotepadWindow({
   onContentChange,
   onDeleteNote,
   onRenameNote,
+  onCreateNote,
 }) {
   const { id, minimized, maximized, zIndex, x, y, width, height } = windowData;
   const [text, setText] = useState(initialContent || '');
@@ -193,6 +194,13 @@ export default function NotepadWindow({
                 className="absolute top-full left-0 bg-[#ffffff] border border-[#716f64] shadow-[2px_2px_2px_rgba(0,0,0,0.3)] py-[2px] z-[99999] min-w-[150px]"
                 onClick={(e) => e.stopPropagation()}
               >
+                <div
+                  className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
+                  onClick={() => { setMenuOpen(null); onCreateNote?.(); }}
+                >
+                  Novo
+                </div>
+                <div className="border-t border-[#aca899] mx-1 my-[2px]" />
                 <div
                   className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => { setMenuOpen(null); setShowRenameDialog(true); }}
