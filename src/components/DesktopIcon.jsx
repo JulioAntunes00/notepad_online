@@ -70,7 +70,7 @@ export default function DesktopIcon({ label, iconSrc, onDoubleClick, onRename, i
     <div
       role="button"
       tabIndex={0}
-      className={`flex flex-col items-center ${isLarge ? 'w-24' : 'w-16'} p-1 rounded focus:outline-none group select-none`}
+      className="flex flex-col items-center w-20 p-1 rounded focus:outline-none group select-none"
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleWrapperKeyDown}
       onContextMenu={handleContextMenu}
@@ -79,7 +79,7 @@ export default function DesktopIcon({ label, iconSrc, onDoubleClick, onRename, i
       <img
         src={iconSrc}
         alt={label}
-        className={`${isLarge ? 'w-20 h-auto' : 'w-12 h-auto'} drop-shadow-[1px_2px_2px_rgba(0,0,0,0.5)] group-focus:brightness-75`}
+        className={`${isLarge ? 'w-16 h-auto' : 'w-12 h-auto'} drop-shadow-[1px_2px_2px_rgba(0,0,0,0.5)] group-focus:brightness-75`}
         draggable={false}
       />
       {isEditing ? (
