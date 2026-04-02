@@ -26,6 +26,10 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' https://unpkg.com https://cdn-icons-png.flaticon.com data: blob:; connect-src 'self' https://*.supabase.co; font-src 'self' https://unpkg.com;"
         }
       ]
     }
