@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 200;
@@ -15,6 +16,9 @@ export default function NotepadWindow({
   onContentChange,
   onDeleteNote,
   onRenameNote,
+  onCreateNote,
+  onShareNote,
+  onShowAlert,
 }) {
   const { id, minimized, maximized, zIndex, x, y, width, height } = windowData;
   const [text, setText] = useState(initialContent || '');
@@ -23,6 +27,15 @@ export default function NotepadWindow({
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef(null);
   const debounceTimerRef = useRef(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [activeFormats, setActiveFormats] = useState({ bold: false, italic: false });
+
+  const updateActiveFormats = () => {
+    setActiveFormats({
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic')
+    });
+  };
 
   // Refs para guardar os valores mais recentes para usar nos event listeners
   const latestText = useRef(text);
@@ -32,14 +45,17 @@ export default function NotepadWindow({
     latestOnContentChange.current = onContentChange;
   });
 
-  // Autosave debounce
+  // Autosave debounce com indicador visual
   useEffect(() => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => {
-      if (text !== initialContent) {
+    if (text !== initialContent) {
+      setIsSaving(true);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
         onContentChange?.(text);
-      }
-    }, 500);
+        // Após o salvamento, esperamos mais 500ms para sumir o indicador
+        setTimeout(() => setIsSaving(false), 500);
+      }, 500);
+    }
     return () => clearTimeout(debounceTimerRef.current);
   }, [text, initialContent, onContentChange]);
 
@@ -126,6 +142,106 @@ export default function NotepadWindow({
     setShowRenameDialog(false);
   };
 
+  const handleShare = async () => {
+    // Compartilhamento temporariamente desativado
+    onShowAlert?.('Aviso', 'O compartilhamento está desativado no momento.', 'info');
+  };
+
+  const editorRef = React.useRef(null);
+  const mountInjected = React.useRef(false);
+
+  // Injeção de conteúdo apenas na montagem inicial (Evita o apagão ao voltar para a aba)
+  useEffect(() => {
+    if (editorRef.current && !mountInjected.current) {
+      // Sanitiza o HTML antes de injetar no DOM (Proteção contra XSS)
+      editorRef.current.innerHTML = DOMPurify.sanitize(initialContent || '');
+      mountInjected.current = true;
+      setText(initialContent || '');
+    }
+  }, [initialContent]);
+
+  const handleInput = (e) => {
+    const htmlText = DOMPurify.sanitize(e.currentTarget.innerHTML);
+    setText(htmlText);
+
+    // updateActiveFormats chamado para manter o visual dos botões sincronizado durante a digitação
+    updateActiveFormats();
+  };
+
+  const execCmd = (cmd) => {
+    editorRef.current?.focus();
+    document.execCommand(cmd, false, null);
+    // Pequeno atraso para garantir que o navegador atualizou o estado interno
+    requestAnimationFrame(() => {
+      updateActiveFormats();
+    });
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const text = e.clipboardData.getData('text/plain');
+
+    if (html) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // Função recursiva para limpar elementos e manter apenas as tags permitidas
+      const cleanNode = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+        const tagName = node.tagName.toLowerCase();
+        const allowedTags = ['b', 'strong', 'i', 'em', 'br'];
+        const blockTags = ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'];
+
+        let childrenContent = '';
+        node.childNodes.forEach(child => {
+          childrenContent += cleanNode(child);
+        });
+
+        if (allowedTags.includes(tagName)) {
+          return `<${tagName}>${childrenContent}</${tagName}>`;
+        }
+
+        // Se for um bloco (p, div, etc), adicionamos uma quebra de linha após o conteúdo dele
+        if (blockTags.includes(tagName)) {
+          return `<div>${childrenContent}</div>`;
+        }
+
+        return childrenContent;
+      };
+
+      const cleanedHtml = cleanNode(doc.body);
+      document.execCommand('insertHTML', false, cleanedHtml || text.replace(/\n/g, '<br>'));
+    } else {
+      document.execCommand('insertHTML', false, text.replace(/\n/g, '<br>'));
+    }
+  };
+
+  const handleDownloadNote = (format = 'txt') => {
+    const isDoc = format === 'doc';
+    const content = isDoc ? editorRef.current.innerHTML : editorRef.current.innerText;
+    const mimeType = isDoc ? 'application/msword' : 'text/plain;charset=utf-8';
+
+    // Para Word (.doc), envolvemos em um HTML básico para garantir que reconheça a formatação
+    const finalContent = isDoc
+      ? `<html><head><meta charset="utf-8"></head><body>${content}</body></html>`
+      : content;
+
+    const blob = new Blob([finalContent], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const cleanTitle = windowData.title.replace(' - Bloco de Notas', '');
+    link.download = `${cleanTitle || 'nota'}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setMenuOpen(null);
+  };
+
   if (minimized) return null;
 
   const windowStyle = maximized
@@ -150,7 +266,9 @@ export default function NotepadWindow({
       ))}
 
       <div className="title-bar" onMouseDown={handleDragStart} style={{ cursor: maximized ? 'default' : 'move' }}>
-        <div className="title-bar-text truncate pr-2">{noteTitle} - Bloco de Notas</div>
+        <div className="title-bar-text truncate pr-2">
+          {noteTitle} - Bloco de Notas
+        </div>
         <div className="title-bar-controls shrink-0">
           <button aria-label="Minimize" onClick={() => onMinimize(id)} />
           <button aria-label="Maximize" onClick={() => onToggleMaximize(id)} />
@@ -159,54 +277,112 @@ export default function NotepadWindow({
       </div>
 
       <div className="window-body flex-1 flex flex-col !m-[3px] overflow-hidden">
-        {/* Menu bar with functional Arquivo dropdown */}
-        <div className="flex items-center px-1 py-[1px] bg-[#ece9d8] border-b border-[#aca899] text-[11px] select-none relative">
-          <div className="relative">
+        {/* Menu bar estilo Windows XP com Barra de Ferramentas */}
+        <div className="flex items-center px-1 py-[2px] bg-[#ece9d8] border-b border-[#aca899] text-[11px] select-none relative h-[26px]">
+          <div className="relative h-full flex items-center mr-2">
             <span
-              className={`px-2 cursor-default rounded-sm ${menuOpen === 'arquivo' ? 'bg-[#316ac5] text-white' : 'hover:bg-[#316ac5] hover:text-white'}`}
+              className={`px-2 h-full flex items-center cursor-default ${menuOpen === 'arquivo' ? 'bg-[#316ac5] text-white' : 'hover:bg-[#316ac5] hover:text-white'}`}
               onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === 'arquivo' ? null : 'arquivo'); }}
             >
               Arquivo
             </span>
             {menuOpen === 'arquivo' && (
               <div
-                className="absolute top-full left-0 bg-white border border-[#aca899] shadow-md py-1 z-[99999] min-w-[180px]"
+                className="absolute top-full left-0 bg-[#ffffff] border border-[#716f64] shadow-[2px_2px_2px_rgba(0,0,0,0.3)] py-[2px] z-[99999] min-w-[150px]"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div
-                  className="px-4 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
+                  className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
+                  onClick={() => { setMenuOpen(null); onCreateNote?.(); }}
+                >
+                  Novo
+                </div>
+                <div className="border-t border-[#aca899] mx-1 my-[2px]" />
+                <div
+                  className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => { setMenuOpen(null); setShowRenameDialog(true); }}
                 >
-                  ✏️ Renomear nota
+                  Renomear
                 </div>
-                <div className="border-t border-[#e0e0e0] my-1" />
                 <div
-                  className="px-4 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default text-red-600 hover:!text-white"
+                  className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
+                  onClick={() => handleDownloadNote('txt')}
+                >
+                  Salvar como TXT
+                </div>
+                <div
+                  className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
+                  onClick={() => handleDownloadNote('doc')}
+                >
+                  Salvar para Word
+                </div>
+                <div className="border-t border-[#aca899] mx-1 my-[2px]" />
+                <div
+                  className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => { setMenuOpen(null); onDeleteNote?.(); }}
                 >
-                  🗑️ Excluir nota
+                  Excluir
                 </div>
               </div>
             )}
           </div>
-          <span className="px-2 hover:bg-[#316ac5] hover:text-white cursor-default rounded-sm">Editar</span>
-          <span className="px-2 hover:bg-[#316ac5] hover:text-white cursor-default rounded-sm">Formatar</span>
-          <span className="px-2 hover:bg-[#316ac5] hover:text-white cursor-default rounded-sm">Ajuda</span>
+
+          <span
+            className="px-2 h-full flex items-center hover:bg-[#316ac5] hover:text-white cursor-pointer mr-4"
+            onClick={handleShare}
+          >
+            Compartilhar
+          </span>
+
+          {/* Barra de Ferramentas WordPad (B, I) */}
+          <div className="flex items-center gap-1 border-l border-[#aca899] pl-2 h-[80%]">
+            <button
+              className={`w-6 h-6 flex items-center justify-center font-bold text-[13px] border ${activeFormats.bold ? 'bg-[#d4d0c8] border-[#aca899] shadow-inner' : 'border-transparent hover:border-[#aca899] hover:bg-[#f0f0f0]'} active:shadow-inner`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                execCmd('bold');
+              }}
+              title="Negrito"
+            >B</button>
+            <button
+              className={`w-6 h-6 flex items-center justify-center italic text-[13px] border ${activeFormats.italic ? 'bg-[#d4d0c8] border-[#aca899] shadow-inner' : 'border-transparent hover:border-[#aca899] hover:bg-[#f0f0f0]'} active:shadow-inner`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                execCmd('italic');
+              }}
+              title="Itálico"
+            >I</button>
+          </div>
         </div>
 
-        <div className="flex-1 border border-[#aca899] bg-white overflow-hidden">
-          <textarea
-            className="w-full h-full resize-none border-none outline-none p-1 text-sm bg-transparent"
+        <div className="flex-1 border border-[#aca899] bg-white overflow-y-auto">
+          <div
+            ref={editorRef}
+            contentEditable
+            className="w-full min-h-full outline-none p-2 text-sm bg-transparent"
             style={{ fontFamily: "'Lucida Console', 'Courier New', monospace", fontSize: '13px' }}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
+            onInput={handleInput}
+            onKeyUp={updateActiveFormats}
+            onMouseUp={updateActiveFormats}
+            onPaste={handlePaste}
             spellCheck={false}
           />
         </div>
 
         <div className="status-bar !m-0 !py-1">
           <p className="status-bar-field">Ln 1, Col 1</p>
-          <p className="status-bar-field">Salvo autom.</p>
+          <p className="status-bar-field flex items-center gap-1 min-w-[100px]">
+            {isSaving ? (
+              <>
+                <span>💾</span>
+                <span>Salvando...</span>
+              </>
+            ) : (
+              <span>Salvo autom.</span>
+            )}
+          </p>
           <p className="status-bar-field">UTF-8</p>
         </div>
       </div>

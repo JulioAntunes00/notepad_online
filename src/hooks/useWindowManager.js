@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 let windowIdCounter = 100;
@@ -51,7 +51,7 @@ export default function useWindowManager(loggedUser) {
        } else if (loggedUser.id) {
            supabase.from('retronote_windows')
                    .upsert([{ user_id: loggedUser.id, windows_json: storable }])
-                   .then();
+                   .then(({ error }) => { if (error) console.error('[RetroNote] Erro ao salvar janelas:', error.message); });
        }
     }, 1000);
     return () => clearTimeout(timeout);
