@@ -6,7 +6,13 @@ import React, { useState, useEffect } from 'react';
  *  - windows: lista de janelas abertas
  *  - onWindowClick: callback ao clicar numa janela na taskbar (minimizar/restaurar)
  */
-export default function Taskbar({ windows = [], onWindowClick, activeWindowId, onToggleStartMenu }) {
+export default function Taskbar({ 
+  windows = [], 
+  onWindowClick, 
+  activeWindowId, 
+  onToggleStartMenu, 
+  onWindowContextMenu 
+}) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -16,6 +22,12 @@ export default function Taskbar({ windows = [], onWindowClick, activeWindowId, o
 
   const formatTime = (date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleContextMenu = (e, winId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onWindowContextMenu?.({ x: e.clientX, y: e.clientY }, winId);
   };
 
   return (
@@ -47,6 +59,7 @@ export default function Taskbar({ windows = [], onWindowClick, activeWindowId, o
           <div
             key={win.id}
             onClick={() => onWindowClick(win.id)}
+            onContextMenu={(e) => handleContextMenu(e, win.id)}
             className={`h-[24px] min-w-[50px] max-w-[160px] truncate px-3 text-[11px] text-white rounded-[2px] border border-[#1c4599] flex items-center gap-1 cursor-pointer select-none ${
               win.id === activeWindowId && !win.minimized
                 ? 'bg-[#1c4599] shadow-[inset_0_0_5px_rgba(0,0,0,0.5)] brightness-75'

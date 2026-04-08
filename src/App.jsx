@@ -143,6 +143,10 @@ function App() {
     deleteNote(noteId);
   };
 
+  const handleWindowContextMenu = (pos, winId) => {
+    setActiveMenu({ type: 'taskbar', x: pos.x, y: pos.y, winId });
+  };
+
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
   return (
@@ -284,6 +288,73 @@ function App() {
           return null;
         })}
 
+        {/* Menu de Contexto da Barra de Tarefas */}
+        {activeMenu?.type === 'taskbar' && (() => {
+          const win = windows.find(w => w.id === activeMenu.winId);
+          if (!win) return null;
+          const isNotepad = win.type === 'notepad';
+          
+          return (
+            <div
+              className="fixed bg-[#ece9d8] border border-[#716f64] shadow-[2px_2px_4px_rgba(0,0,0,0.5)] py-[2px] z-[999999] min-w-[140px]"
+              style={{ 
+                bottom: '31px', 
+                left: Math.min(activeMenu.x, window.innerWidth - 150) 
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div 
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+                onClick={() => {
+                  if (win.minimized) restoreWindow(win.id);
+                  else focusWindow(win.id);
+                  setActiveMenu(null);
+                }}
+              >
+                {win.minimized ? 'Restaurar' : 'Focar'}
+              </div>
+
+              <div 
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+                onClick={() => {
+                  if (!win.minimized) minimizeWindow(win.id);
+                  else restoreWindow(win.id);
+                  setActiveMenu(null);
+                }}
+              >
+                {win.minimized ? 'Maximizar' : 'Minimizar'}
+              </div>
+
+              {isNotepad && (
+                <>
+                  <div className="border-t border-[#aca899] my-[2px] mx-1" />
+                  <div 
+                    className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default text-red-700" 
+                    onClick={() => {
+                      if (win.context?.noteId) handleDeleteNote(win.context.noteId);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    Deletar Nota
+                  </div>
+                </>
+              )}
+
+              <div className="border-t border-[#aca899] my-[2px] mx-1" />
+              
+              <div 
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold" 
+                onClick={() => {
+                  closeWindow(win.id);
+                  setActiveMenu(null);
+                }}
+              >
+                Fechar
+              </div>
+            </div>
+          );
+        })()}
+
         {isStartMenuOpen && (
           <StartMenu 
             loggedUser={loggedUser}
@@ -322,6 +393,7 @@ function App() {
 
         <Taskbar 
           windows={windows} 
+          activeWindowId={windows.find(w => w.zIndex === Math.max(...windows.map(win => win.zIndex), 0))?.id}
           onToggleStartMenu={(val) => {
             if (val !== undefined) setIsStartMenuOpen(val);
             else setIsStartMenuOpen(prev => !prev);
@@ -331,6 +403,7 @@ function App() {
             if (win?.minimized) restoreWindow(id);
             else minimizeWindow(id);
           }} 
+          onWindowContextMenu={handleWindowContextMenu}
         />
 
       </div>
