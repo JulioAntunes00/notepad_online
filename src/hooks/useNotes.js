@@ -187,29 +187,60 @@ export default function useFileSystem(loggedUser) {
   const deleteFolder = useCallback(async (id) => {
     const folderToDelete = folders.find(f => f.id === id);
     if (!folderToDelete) return;
-    // Simplification for v1: just delete folder and move it to trash.
-    // In a full implementation, you'd recursively delete/trash contents.
+
     const delAt = new Date().toISOString();
-    setTrash(prevTrash => [...prevTrash, { ...folderToDelete, item_type: 'folder', folder_id: folderToDelete.parent_id, deleted_at: delAt, title: folderToDelete.name }]);
-    setFolders(prev => prev.filter(f => f.id !== id));
-    
+
+    // Coleta recursiva de TUDO dentro da pasta
+    const collectChildren = (parentId) => {
+      const result = { notes: [], folders: [] };
+      const childNotes = notes.filter(n => n.folder_id === parentId);
+      const childFolders = folders.filter(f => f.parent_id === parentId);
+      result.notes.push(...childNotes);
+      result.folders.push(...childFolders);
+      childFolders.forEach(cf => {
+        const deeper = collectChildren(cf.id);
+        result.notes.push(...deeper.notes);
+        result.folders.push(...deeper.folders);
+      });
+      return result;
+    };
+
+    const children = collectChildren(id);
+    const allFolderIds = [id, ...children.folders.map(f => f.id)];
+    const allNoteIds = children.notes.map(n => n.id);
+
+    // Monta itens da lixeira
+    const trashItems = [
+      { id: folderToDelete.id, title: folderToDelete.name, content: '', item_type: 'folder', folder_id: folderToDelete.parent_id, deleted_at: delAt }
+    ];
+    children.folders.forEach(f => {
+      trashItems.push({ id: f.id, title: f.name, content: '', item_type: 'folder', folder_id: f.parent_id, deleted_at: delAt });
+    });
+    children.notes.forEach(n => {
+      trashItems.push({ id: n.id, title: n.title, content: n.content || '', item_type: 'note', folder_id: n.folder_id, deleted_at: delAt });
+    });
+
+    // Atualiza estado local
+    setTrash(prev => [...prev, ...trashItems]);
+    setFolders(prev => prev.filter(f => !allFolderIds.includes(f.id)));
+    setNotes(prev => prev.filter(n => !allNoteIds.includes(n.id)));
+
     if (loggedUser && loggedUser !== 'Anônimo') {
-      supabase.from('retronote_folders').delete().eq('id', id)
-        .then(({ error }) => {
-          if (error) return console.error('[RetroNote] Erro ao deletar pasta:', error.message);
-          supabase.from('retronote_trash').insert([{
-            id: folderToDelete.id,
-            user_id: loggedUser.id,
-            title: folderToDelete.name,
-            item_type: 'folder',
-            folder_id: folderToDelete.parent_id,
-            deleted_at: delAt
-          }]).then(({ error: trashErr }) => {
-            if (trashErr) console.error('[RetroNote] Erro ao mover pasta pra lixeira:', trashErr.message);
-          });
-        });
+      try {
+        // PRIMEIRO salva na lixeira, DEPOIS deleta do banco
+        const { error: trashErr } = await supabase.from('retronote_trash').insert(
+          trashItems.map(item => ({ ...item, user_id: loggedUser.id }))
+        );
+        if (trashErr) console.error('[RetroNote] Erro ao mover para lixeira:', trashErr.message);
+
+        // Agora deleta a pasta pai (CASCADE cuida do resto no banco)
+        const { error: delErr } = await supabase.from('retronote_folders').delete().eq('id', id);
+        if (delErr) console.error('[RetroNote] Erro ao deletar pasta:', delErr.message);
+      } catch (err) {
+        console.error('[RetroNote] Falha crítica ao deletar pasta:', err.message);
+      }
     }
-  }, [folders, loggedUser]);
+  }, [folders, notes, loggedUser]);
 
   const moveNote = useCallback((noteId, newFolderId) => {
     setNotes(prev => prev.map(n => n.id === noteId ? { ...n, folder_id: newFolderId } : n));
@@ -220,13 +251,12 @@ export default function useFileSystem(loggedUser) {
   }, [loggedUser]);
 
   const moveFolder = useCallback((folderId, newParentId) => {
-    // Proteção contra referência circular: impede mover uma pasta para dentro de si mesma ou de um descendente
     if (folderId === newParentId) return;
     const isDescendant = (parentId, targetId) => {
       let current = parentId;
       const visited = new Set();
       while (current) {
-        if (visited.has(current)) break; // Previne loop infinito
+        if (visited.has(current)) break;
         visited.add(current);
         if (current === targetId) return true;
         const folder = folders.find(f => f.id === current);
@@ -249,54 +279,55 @@ export default function useFileSystem(loggedUser) {
 
     try {
       if (itemToRestore.item_type === 'folder') {
-        const restoredFolder = { 
-          id: itemToRestore.id, 
-          name: itemToRestore.title, 
-          parent_id: itemToRestore.folder_id 
-        };
-        
-        // Atualiza UI local
-        setFolders(prev => [...prev, restoredFolder]);
-        setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
+        // Encontra todos os filhos desta pasta que também estão na lixeira
+        const childItems = trash.filter(t => t.folder_id === itemToRestore.id);
+
+        // Re-insere a pasta pai primeiro
+        const restoredFolder = { id: itemToRestore.id, name: itemToRestore.title, parent_id: itemToRestore.folder_id };
 
         if (loggedUser && loggedUser !== 'Anônimo') {
-          // Primeiro remove da lixeira, depois insere na pasta
-          const { error: delErr } = await supabase.from('retronote_trash').delete().eq('id', id);
-          if (delErr) throw new Error('Erro ao deletar da lixeira: ' + delErr.message);
+          // 1. Remove pasta da lixeira no banco
+          await supabase.from('retronote_trash').delete().eq('id', id);
 
+          // 2. Insere pasta de volta no banco
           const { error: insErr } = await supabase.from('retronote_folders').insert([{
-            id: restoredFolder.id,
-            user_id: loggedUser.id,
-            name: restoredFolder.name,
-            parent_id: restoredFolder.parent_id
+            id: restoredFolder.id, user_id: loggedUser.id, name: restoredFolder.name, parent_id: restoredFolder.parent_id
           }]);
           if (insErr) throw new Error('Erro ao reinserir pasta: ' + insErr.message);
+
+          // 3. Restaura os filhos automaticamente
+          for (const child of childItems) {
+            await supabase.from('retronote_trash').delete().eq('id', child.id);
+            if (child.item_type === 'folder') {
+              await supabase.from('retronote_folders').insert([{
+                id: child.id, user_id: loggedUser.id, name: child.title, parent_id: child.folder_id
+              }]);
+            } else {
+              await supabase.from('retronote_notes').insert([{
+                id: child.id, user_id: loggedUser.id, title: child.title, content: child.content || '', folder_id: child.folder_id
+              }]);
+            }
+          }
         }
-      } else {
-        const restoredNote = { 
-          id: itemToRestore.id, 
-          title: itemToRestore.title, 
-          content: itemToRestore.content, 
-          folder_id: itemToRestore.folder_id 
-        };
-        
+
         // Atualiza UI local
-        setNotes(prevNotes => [...prevNotes, restoredNote]);
-        setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
+        setFolders(prev => [...prev, restoredFolder, ...childItems.filter(c => c.item_type === 'folder').map(c => ({ id: c.id, name: c.title, parent_id: c.folder_id }))]);
+        setNotes(prev => [...prev, ...childItems.filter(c => c.item_type === 'note').map(c => ({ id: c.id, title: c.title, content: c.content, folder_id: c.folder_id }))]);
+        setTrash(prev => prev.filter(t => t.id !== id && !childItems.some(c => c.id === t.id)));
+
+      } else {
+        const restoredNote = { id: itemToRestore.id, title: itemToRestore.title, content: itemToRestore.content, folder_id: itemToRestore.folder_id };
 
         if (loggedUser && loggedUser !== 'Anônimo') {
-          const { error: delErr } = await supabase.from('retronote_trash').delete().eq('id', id);
-          if (delErr) throw new Error('Erro ao deletar da lixeira: ' + delErr.message);
-
+          await supabase.from('retronote_trash').delete().eq('id', id);
           const { error: insErr } = await supabase.from('retronote_notes').insert([{
-            id: restoredNote.id,
-            user_id: loggedUser.id,
-            title: restoredNote.title,
-            content: restoredNote.content,
-            folder_id: restoredNote.folder_id
+            id: restoredNote.id, user_id: loggedUser.id, title: restoredNote.title, content: restoredNote.content, folder_id: restoredNote.folder_id
           }]);
           if (insErr) throw new Error('Erro ao reinserir nota: ' + insErr.message);
         }
+
+        setNotes(prev => [...prev, restoredNote]);
+        setTrash(prev => prev.filter(t => t.id !== id));
       }
     } catch (err) {
       console.error('[RetroNote] Falha crítica na restauração:', err.message);
@@ -384,22 +415,22 @@ export default function useFileSystem(loggedUser) {
     }
   }, []);
 
-  return { 
-    notes, 
-    folders, 
-    trash, 
-    addNote, 
+  return {
+    notes,
+    folders,
+    trash,
+    addNote,
     addFolder,
-    updateNoteContent, 
-    updateNoteTitle, 
+    updateNoteContent,
+    updateNoteTitle,
     updateFolderTitle,
-    shareNote, 
+    shareNote,
     deleteNote,
     deleteFolder,
-    restoreNote: restoreItem, 
-    permanentDelete, 
-    emptyTrash, 
-    migrateToCloud, 
+    restoreNote: restoreItem,
+    permanentDelete,
+    emptyTrash,
+    migrateToCloud,
     duplicateNote,
     moveNote,
     moveFolder
