@@ -184,10 +184,9 @@ export default function useFileSystem(loggedUser) {
     }
   }, [notes, loggedUser]);
 
-  const deleteFolder = useCallback((id) => {
+  const deleteFolder = useCallback(async (id) => {
     const folderToDelete = folders.find(f => f.id === id);
     if (!folderToDelete) return;
-    
     // Simplification for v1: just delete folder and move it to trash.
     // In a full implementation, you'd recursively delete/trash contents.
     const delAt = new Date().toISOString();
