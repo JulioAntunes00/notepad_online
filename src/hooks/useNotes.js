@@ -244,54 +244,64 @@ export default function useFileSystem(loggedUser) {
     }
   }, [loggedUser, folders]);
 
-  const restoreItem = useCallback((id) => {
+  const restoreItem = useCallback(async (id) => {
     const itemToRestore = trash.find(n => n.id === id);
     if (!itemToRestore) return;
 
-    if (itemToRestore.item_type === 'folder') {
-      const restoredFolder = { id: itemToRestore.id, name: itemToRestore.title, parent_id: itemToRestore.folder_id };
-      setFolders(prev => [...prev, restoredFolder]);
-      setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
+    try {
+      if (itemToRestore.item_type === 'folder') {
+        const restoredFolder = { 
+          id: itemToRestore.id, 
+          name: itemToRestore.title, 
+          parent_id: itemToRestore.folder_id 
+        };
+        
+        // Atualiza UI local
+        setFolders(prev => [...prev, restoredFolder]);
+        setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
 
-      if (loggedUser && loggedUser !== 'Anônimo') {
-        supabase.from('retronote_trash').delete().eq('id', id).then(({ error: delErr }) => {
-          if (delErr) console.error('[RetroNote] Erro ao tirar da lixeira:', delErr.message);
-          
-          supabase.from('retronote_folders').insert([{
+        if (loggedUser && loggedUser !== 'Anônimo') {
+          // Primeiro remove da lixeira, depois insere na pasta
+          const { error: delErr } = await supabase.from('retronote_trash').delete().eq('id', id);
+          if (delErr) throw new Error('Erro ao deletar da lixeira: ' + delErr.message);
+
+          const { error: insErr } = await supabase.from('retronote_folders').insert([{
             id: restoredFolder.id,
             user_id: loggedUser.id,
             name: restoredFolder.name,
             parent_id: restoredFolder.parent_id
-          }]).then(({ error: insErr }) => {
-            if (insErr) console.error('[RetroNote] Erro ao reinserir pasta no banco:', insErr.message);
-          });
-        });
-      }
-    } else {
-      const restoredNote = { 
-        id: itemToRestore.id, 
-        title: itemToRestore.title, 
-        content: itemToRestore.content, 
-        folder_id: itemToRestore.folder_id 
-      };
-      setNotes(prevNotes => [...prevNotes, restoredNote]);
-      setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
+          }]);
+          if (insErr) throw new Error('Erro ao reinserir pasta: ' + insErr.message);
+        }
+      } else {
+        const restoredNote = { 
+          id: itemToRestore.id, 
+          title: itemToRestore.title, 
+          content: itemToRestore.content, 
+          folder_id: itemToRestore.folder_id 
+        };
+        
+        // Atualiza UI local
+        setNotes(prevNotes => [...prevNotes, restoredNote]);
+        setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
 
-      if (loggedUser && loggedUser !== 'Anônimo') {
-        supabase.from('retronote_trash').delete().eq('id', id).then(({ error: delErr }) => {
-          if (delErr) console.error('[RetroNote] Erro ao tirar da lixeira:', delErr.message);
+        if (loggedUser && loggedUser !== 'Anônimo') {
+          const { error: delErr } = await supabase.from('retronote_trash').delete().eq('id', id);
+          if (delErr) throw new Error('Erro ao deletar da lixeira: ' + delErr.message);
 
-          supabase.from('retronote_notes').insert([{
+          const { error: insErr } = await supabase.from('retronote_notes').insert([{
             id: restoredNote.id,
             user_id: loggedUser.id,
             title: restoredNote.title,
             content: restoredNote.content,
             folder_id: restoredNote.folder_id
-          }]).then(({ error: insErr }) => {
-            if (insErr) console.error('[RetroNote] Erro ao reinserir nota no banco:', insErr.message);
-          });
-        });
+          }]);
+          if (insErr) throw new Error('Erro ao reinserir nota: ' + insErr.message);
+        }
       }
+    } catch (err) {
+      console.error('[RetroNote] Falha crítica na restauração:', err.message);
+      // Opcional: Reverter estado local se falhar? Mas vamos ver o erro primeiro.
     }
   }, [trash, loggedUser]);
 
