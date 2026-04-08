@@ -48,7 +48,12 @@ export default function useFileSystem(loggedUser) {
           if (fData) setFolders(fData);
           if (tData) {
             const now = Date.now();
-            const toKeep = tData.filter(item => (now - new Date(item.deleted_at).getTime()) <= THREE_DAYS_MS);
+            const toKeep = tData.filter(item => {
+              if (!item.deleted_at) return true; // Se não tem data, mantém por segurança
+              const deleteTime = new Date(item.deleted_at).getTime();
+              if (isNaN(deleteTime)) return true; // Se data for inválida, mantém
+              return (now - deleteTime) <= THREE_DAYS_MS;
+            });
             setTrash(toKeep);
           }
           loadedForRef.current = currentUser;
