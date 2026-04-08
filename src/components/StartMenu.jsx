@@ -9,21 +9,21 @@ export default function StartMenu({
   onLogin
 }) {
   return (
-    <div 
-      className="absolute bottom-[30px] left-0 overflow-hidden flex flex-col z-[10000] shadow-[4px_4px_10px_rgba(0,0,0,0.5)] select-none"
+    <div
+      className="absolute bottom-[30px] left-0 rounded-t-[10px] overflow-hidden flex flex-col z-[10000] shadow-[4px_4px_10px_rgba(0,0,0,0.5)] select-none"
       style={{
         backgroundImage: "url('/menu iniciar.png')",
         backgroundSize: '100% 100%',
         backgroundRepeat: 'no-repeat',
-        width: '242px',
-        height: '580px',
+        width: '275px',
+        height: '658px',
         backgroundColor: 'transparent'
       }}
     >
       {/* Single Column Area to prevent truncation */}
-      <div className="absolute top-0 left-0 w-full h-[92%] flex flex-col pt-[105px] px-4">
-        
-        <div 
+      <div className="absolute top-0 left-0 w-full h-[92%] flex flex-col pt-[118px] px-4">
+
+        <div
           className="w-full h-[50px] mb-1 cursor-pointer hover:bg-black/5 rounded flex items-center px-2"
           onClick={() => { onCreateNote(); onClose(); }}
           title="Bloco de Notas"
@@ -40,12 +40,12 @@ export default function StartMenu({
 
       {/* Bottom Bar (Logout) */}
       <div className="absolute bottom-[5px] right-0 w-full h-[35px] flex justify-end items-center pr-2">
-        <div 
+        <div
           className="cursor-pointer hover:brightness-110 active:brightness-90 flex items-center gap-1 px-2 py-1 rounded hover:bg-white/20"
-          onClick={() => { 
-            if (loggedUser) onLogout(); 
-            else onLogin(); 
-             onClose(); 
+          onClick={() => {
+            if (loggedUser) onLogout();
+            else onLogin();
+            onClose();
           }}
           title={loggedUser ? "Fazer Logout" : "Fazer Login"}
         >

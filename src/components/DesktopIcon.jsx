@@ -7,9 +7,10 @@ import React, { useState, useRef, useEffect } from 'react';
  * @param {function} onClick - Callback ao dar um clique
  * @param {function} onRename - Callback para renomear, recebe novo string (opcional)
  */
-export default function DesktopIcon({ label, iconSrc, onClick, onRename, onDuplicate, onDelete, onEmptyTrash, menuPos, onContextMenu, isLarge = false }) {
+export default function DesktopIcon({ id, type, label, iconSrc, onClick, onRename, onDuplicate, onDelete, onEmptyTrash, menuPos, onContextMenu, onCloseMenu, isLarge = false, onDropItem }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(label);
+  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -65,12 +66,58 @@ export default function DesktopIcon({ label, iconSrc, onClick, onRename, onDupli
     }
   };
 
+  const handleDragStart = (e) => {
+    if (id && type) {
+      e.dataTransfer.setData('application/json', JSON.stringify({ id, type }));
+      e.dataTransfer.effectAllowed = 'move';
+    }
+  };
+
+  const handleDragOver = (e) => {
+    if (type === 'folder' || onDropItem) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      if (!isDragOver) setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    if (type === 'folder' || onDropItem) {
+      e.stopPropagation();
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    if (type === 'folder' || onDropItem) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('application/json'));
+        if (data && data.id) {
+          // Avoid self-drop or moving a folder into itself
+          if (data.id === id) return;
+          if (onDropItem) onDropItem(data.id, data.type);
+        }
+      } catch (err) {
+        // Ignorar
+      }
+    }
+  };
+
   return (
     <>
       <div
         role="button"
         tabIndex={0}
-        className="flex flex-col items-center w-20 p-1 rounded focus:outline-none group select-none relative"
+        draggable={!!(id && type && !isEditing)}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`flex flex-col items-center w-20 p-1 rounded focus:outline-none group select-none relative ${isDragOver ? 'bg-blue-500/30' : ''}`}
         onClick={handleClick}
         onKeyDown={handleWrapperKeyDown}
         onContextMenu={handleContextMenu}
@@ -108,9 +155,12 @@ export default function DesktopIcon({ label, iconSrc, onClick, onRename, onDupli
         <div
           className="fixed bg-[#ece9d8] border border-[#716f64] shadow-[2px_2px_4px_rgba(0,0,0,0.5)] py-[2px] z-[99999] min-w-[120px]"
           style={{ top: menuPos.y, left: menuPos.x }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onCloseMenu?.();
+          }}
         >
-          <div className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold" onClick={() => onClick?.()}>Abrir</div>
+          <div className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold" onClick={() => { onClick?.(); onCloseMenu?.(); }}>Abrir</div>
           
           {onEmptyTrash && (
             <>

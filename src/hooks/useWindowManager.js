@@ -80,8 +80,11 @@ export default function useWindowManager(loggedUser) {
   }, [setWindows]);
 
   const openWindow = useCallback((type, title, context = {}, defaultState = {}) => {
-    if (context.noteId) {
-      const existing = windowsRef.current.find(w => w.context?.noteId === context.noteId);
+    if (context.noteId || context.folderId) {
+      const existing = windowsRef.current.find(w => 
+        (context.noteId && w.context?.noteId === context.noteId) ||
+        (context.folderId && w.context?.folderId === context.folderId)
+      );
       if (existing) {
         focusWindow(existing.id);
         restoreWindow(existing.id);

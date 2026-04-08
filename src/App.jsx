@@ -10,7 +10,9 @@ import LoginWindow from './components/LoginWindow';
 import XPAlertWindow from './components/XPAlertWindow';
 import StartMenu from './components/StartMenu';
 import AboutWindow from './components/AboutWindow';
+import FolderWindow from './components/FolderWindow';
 
+const FOLDER_ICON = '/folder-closed.png';
 const NOTEPAD_ICON = '/Notepad.png';
 const HELP_ICON = '/Help and Support.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
@@ -22,9 +24,9 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false);
 
   const {
-    notes, trash,
-    addNote, updateNoteContent, updateNoteTitle, shareNote,
-    deleteNote, restoreNote, permanentDelete, emptyTrash, migrateToCloud, duplicateNote
+    notes, folders, trash,
+    addNote, addFolder, updateNoteContent, updateNoteTitle, updateFolderTitle, shareNote,
+    deleteNote, deleteFolder, restoreNote, permanentDelete, emptyTrash, migrateToCloud, duplicateNote, moveNote, moveFolder
   } = useNotes(loggedUser);
 
   const {
@@ -43,6 +45,13 @@ function App() {
     document.addEventListener('click', handleClose);
     return () => document.removeEventListener('click', handleClose);
   }, [activeMenu]);
+
+  // Bloqueia o menu de contexto nativo do navegador em toda a aplicação
+  useEffect(() => {
+    const block = (e) => e.preventDefault();
+    document.addEventListener('contextmenu', block);
+    return () => document.removeEventListener('contextmenu', block);
+  }, []);
 
   // Inicialização simples: Verifica se há sessão
   useEffect(() => {
@@ -122,8 +131,8 @@ function App() {
     openWindow('notepad', `${note.title} - Bloco de Notas`, { noteId: note.id });
   };
 
-  const handleCreateNote = (name) => {
-    const newNote = addNote(name);
+  const handleCreateNote = (name, parentId = null) => {
+    const newNote = addNote(name || 'Nova Nota', parentId);
     openWindow('notepad', `${newNote.title} - Bloco de Notas`, { noteId: newNote.id });
   };
 
@@ -131,6 +140,37 @@ function App() {
     updateNoteTitle(noteId, newTitle);
     const win = windows.find(w => w.context?.noteId === noteId);
     if (win) updateWindow(win.id, { title: `${newTitle} - Bloco de Notas` });
+  };
+
+  const handleCreateFolder = (parentId = null) => {
+    addFolder('Nova Pasta', parentId);
+  };
+
+  const handleRenameFolder = (folderId, newTitle) => {
+    updateFolderTitle(folderId, newTitle);
+    const win = windows.find(w => w.context?.folderId === folderId);
+    if (win) updateWindow(win.id, { title: newTitle });
+  };
+
+  const handleDeleteFolder = (folderId) => {
+    const win = windows.find(w => w.context?.folderId === folderId);
+    if (win) closeWindow(win.id);
+    deleteFolder(folderId);
+  };
+
+  const handleOpenFolder = (folder) => {
+    openWindow('folder', folder.name, { folderId: folder.id });
+  };
+
+  const handleDropToDesktop = (e) => {
+    e.preventDefault();
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      if (data && data.id) {
+        if (data.type === 'note') moveNote(data.id, null);
+        if (data.type === 'folder') moveFolder(data.id, null);
+      }
+    } catch { }
   };
 
   const handleDuplicateNote = async (note) => {
@@ -146,6 +186,17 @@ function App() {
 
   const handleWindowContextMenu = (pos, winId) => {
     setActiveMenu({ type: 'taskbar', x: pos.x, y: pos.y, winId });
+  };
+
+  const handleDesktopContextMenu = (e) => {
+    // Só abre o menu do desktop se o clique foi no fundo (não em cima de um ícone/janela)
+    const target = e.target;
+    const isDesktop = target.id === 'desktop-bg' || target.closest('#desktop-bg') && !target.closest('[role="button"]') && !target.closest('.window');
+    if (isDesktop) {
+      e.preventDefault();
+      e.stopPropagation();
+      setActiveMenu({ type: 'desktop', x: e.clientX, y: e.clientY });
+    }
   };
 
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
@@ -166,10 +217,18 @@ function App() {
       )}
 
       {/* Container Principal que ocupa o resto do espaço */}
-      <div className="flex-1 relative w-full h-full">
+      <div 
+        id="desktop-bg"
+        className="flex-1 relative w-full h-full"
+        onContextMenu={handleDesktopContextMenu}
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+        onDrop={handleDropToDesktop}
+      >
 
         {/* Ícones da Área de Trabalho sempre visíveis */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
+        <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)] pointer-events-none">
+          <div className="pointer-events-auto flex flex-col gap-2">
+
 
           <DesktopIcon
             label="Lixeira"
@@ -186,9 +245,31 @@ function App() {
             onContextMenu={(pos) => setActiveMenu({ id: 'trash', ...pos })}
           />
 
-          {loggedUser && notes.map(note => (
+          {loggedUser && folders.filter(f => f.parent_id === null).map(folder => (
+            <DesktopIcon
+              key={folder.id}
+              id={folder.id}
+              type="folder"
+              label={folder.name}
+              iconSrc={FOLDER_ICON}
+              onClick={() => handleOpenFolder(folder)}
+              onRename={(newTitle) => handleRenameFolder(folder.id, newTitle)}
+              onDelete={() => handleDeleteFolder(folder.id)}
+              menuPos={activeMenu?.id === folder.id ? activeMenu : null}
+              onContextMenu={(pos) => setActiveMenu({ id: folder.id, ...pos })}
+              onCloseMenu={() => setActiveMenu(null)}
+              onDropItem={(droppedId, droppedType) => {
+                if (droppedType === 'note') moveNote(droppedId, folder.id);
+                if (droppedType === 'folder') moveFolder(droppedId, folder.id);
+              }}
+            />
+          ))}
+
+          {loggedUser && notes.filter(n => n.folder_id === null || n.folder_id === undefined).map(note => (
             <DesktopIcon
               key={note.id}
+              id={note.id}
+              type="note"
               label={note.title}
               iconSrc={NOTEPAD_ICON}
               onClick={() => handleOpenNote(note)}
@@ -197,8 +278,10 @@ function App() {
               onDelete={() => handleDeleteNote(note.id)}
               menuPos={activeMenu?.id === note.id ? activeMenu : null}
               onContextMenu={(pos) => setActiveMenu({ id: note.id, ...pos })}
+              onCloseMenu={() => setActiveMenu(null)}
             />
           ))}
+          </div>
         </div>
 
         {/* Ícone de Login/Sair no topo direito com Sobre o Site ao lado */}
@@ -266,6 +349,35 @@ function App() {
             );
           }
 
+          if (win.type === 'folder' && loggedUser) {
+            return (
+              <FolderWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                notes={notes}
+                folders={folders}
+                onOpenWindow={openWindow}
+                onRenameNote={handleRenameNote}
+                onRenameFolder={handleRenameFolder}
+                onDeleteNote={handleDeleteNote}
+                onDeleteFolder={handleDeleteFolder}
+                onCreateFolder={(parentId) => handleCreateFolder(parentId)}
+                onCreateNote={(parentId) => handleCreateNote('Nova Nota', parentId)}
+                onMoveItem={(itemId, itemType, newParentId) => {
+                  if (itemType === 'note') moveNote(itemId, newParentId);
+                  if (itemType === 'folder') moveFolder(itemId, newParentId);
+                }}
+                activeMenu={activeMenu}
+                setActiveMenu={setActiveMenu}
+              />
+            );
+          }
+
           if (win.type === 'recyclebin' && loggedUser) {
             return (
               <RecycleBinWindow
@@ -314,6 +426,37 @@ function App() {
           
           return null;
         })}
+
+        {/* Menu de Contexto da Área de Trabalho */}
+        {activeMenu?.type === 'desktop' && loggedUser && (
+          <div
+            className="fixed bg-[#ece9d8] border border-[#716f64] shadow-[2px_2px_4px_rgba(0,0,0,0.5)] py-[2px] z-[999999] min-w-[140px]"
+            style={{ 
+              top: activeMenu.y, 
+              left: activeMenu.x 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div 
+              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+              onClick={() => {
+                handleCreateFolder();
+                setActiveMenu(null);
+              }}
+            >
+              Nova Pasta
+            </div>
+            <div 
+              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+              onClick={() => {
+                handleCreateNote();
+                setActiveMenu(null);
+              }}
+            >
+              Nova Nota
+            </div>
+          </div>
+        )}
 
         {/* Menu de Contexto da Barra de Tarefas */}
         {activeMenu?.type === 'taskbar' && (() => {
