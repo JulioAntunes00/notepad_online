@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 export default function RecycleBinWindow({
   windowData,
@@ -45,11 +45,11 @@ export default function RecycleBinWindow({
     document.addEventListener('mouseup', onUp);
   };
 
-  if (minimized) return null;
-
-  const windowStyle = maximized
-    ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 32px)', zIndex }
-    : { top: y, left: x, width, height, zIndex };
+  const windowStyle = minimized
+    ? { display: 'none' }
+    : maximized
+      ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 32px)', zIndex }
+      : { top: y, left: x, width, height, zIndex };
 
   const resizeHandles = [
     { dir: 'n', cls: 'absolute top-0 left-2 right-2 h-1 cursor-n-resize' },

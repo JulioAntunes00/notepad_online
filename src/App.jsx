@@ -13,7 +13,7 @@ const NOTEPAD_ICON = '/notepad-icon.png';
 const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
-const USER_ICON = 'https://cdn-icons-png.flaticon.com/512/1286/1286825.png';
+const USER_ICON = '/poweroff.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);

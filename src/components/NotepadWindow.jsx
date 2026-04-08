@@ -242,11 +242,11 @@ export default function NotepadWindow({
     setMenuOpen(null);
   };
 
-  if (minimized) return null;
-
-  const windowStyle = maximized
-    ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 32px)', zIndex }
-    : { top: y, left: x, width, height, zIndex };
+  const windowStyle = minimized
+    ? { display: 'none' }
+    : maximized
+      ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 32px)', zIndex }
+      : { top: y, left: x, width, height, zIndex };
 
   const resizeHandles = [
     { dir: 'n', className: 'absolute top-0 left-2 right-2 h-1 cursor-n-resize' },
