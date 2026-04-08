@@ -279,41 +279,57 @@ export default function useFileSystem(loggedUser) {
 
     try {
       if (itemToRestore.item_type === 'folder') {
-        // Encontra todos os filhos desta pasta que também estão na lixeira
-        const childItems = trash.filter(t => t.folder_id === itemToRestore.id);
+        // Coleta TODOS os descendentes recursivamente (filhos, netos, etc.)
+        const collectAllChildren = (parentId, trashList) => {
+          const direct = trashList.filter(t => t.folder_id === parentId && t.id !== parentId);
+          const all = [...direct];
+          direct.filter(d => d.item_type === 'folder').forEach(subfolder => {
+            all.push(...collectAllChildren(subfolder.id, trashList));
+          });
+          return all;
+        };
+
+        const childItems = collectAllChildren(itemToRestore.id, trash);
+        const allItemIds = new Set([id, ...childItems.map(c => c.id)]);
 
         // Re-insere a pasta pai primeiro
         const restoredFolder = { id: itemToRestore.id, name: itemToRestore.title, parent_id: itemToRestore.folder_id };
 
         if (loggedUser && loggedUser !== 'Anônimo') {
-          // 1. Remove pasta da lixeira no banco
-          await supabase.from('retronote_trash').delete().eq('id', id);
+          // 1. Remove TUDO da lixeira no banco de uma vez
+          for (const itemId of allItemIds) {
+            await supabase.from('retronote_trash').delete().eq('id', itemId);
+          }
 
-          // 2. Insere pasta de volta no banco
+          // 2. Insere pasta raiz primeiro
           const { error: insErr } = await supabase.from('retronote_folders').insert([{
             id: restoredFolder.id, user_id: loggedUser.id, name: restoredFolder.name, parent_id: restoredFolder.parent_id
           }]);
           if (insErr) throw new Error('Erro ao reinserir pasta: ' + insErr.message);
 
-          // 3. Restaura os filhos automaticamente
-          for (const child of childItems) {
-            await supabase.from('retronote_trash').delete().eq('id', child.id);
-            if (child.item_type === 'folder') {
-              await supabase.from('retronote_folders').insert([{
-                id: child.id, user_id: loggedUser.id, name: child.title, parent_id: child.folder_id
-              }]);
-            } else {
-              await supabase.from('retronote_notes').insert([{
-                id: child.id, user_id: loggedUser.id, title: child.title, content: child.content || '', folder_id: child.folder_id
-              }]);
-            }
+          // 3. Restaura subpastas primeiro (ordem importa por causa das foreign keys)
+          const childFolders = childItems.filter(c => c.item_type === 'folder');
+          for (const child of childFolders) {
+            await supabase.from('retronote_folders').insert([{
+              id: child.id, user_id: loggedUser.id, name: child.title, parent_id: child.folder_id
+            }]);
+          }
+
+          // 4. Restaura notas por último
+          const childNotes = childItems.filter(c => c.item_type === 'note');
+          for (const child of childNotes) {
+            await supabase.from('retronote_notes').insert([{
+              id: child.id, user_id: loggedUser.id, title: child.title, content: child.content || '', folder_id: child.folder_id
+            }]);
           }
         }
 
         // Atualiza UI local
-        setFolders(prev => [...prev, restoredFolder, ...childItems.filter(c => c.item_type === 'folder').map(c => ({ id: c.id, name: c.title, parent_id: c.folder_id }))]);
-        setNotes(prev => [...prev, ...childItems.filter(c => c.item_type === 'note').map(c => ({ id: c.id, title: c.title, content: c.content, folder_id: c.folder_id }))]);
-        setTrash(prev => prev.filter(t => t.id !== id && !childItems.some(c => c.id === t.id)));
+        const restoredFolders = [restoredFolder, ...childItems.filter(c => c.item_type === 'folder').map(c => ({ id: c.id, name: c.title, parent_id: c.folder_id }))];
+        const restoredNotes = childItems.filter(c => c.item_type === 'note').map(c => ({ id: c.id, title: c.title, content: c.content, folder_id: c.folder_id }));
+        setFolders(prev => [...prev, ...restoredFolders]);
+        setNotes(prev => [...prev, ...restoredNotes]);
+        setTrash(prev => prev.filter(t => !allItemIds.has(t.id)));
 
       } else {
         const restoredNote = { id: itemToRestore.id, title: itemToRestore.title, content: itemToRestore.content, folder_id: itemToRestore.folder_id };
