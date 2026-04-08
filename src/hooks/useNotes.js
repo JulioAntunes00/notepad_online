@@ -254,13 +254,17 @@ export default function useFileSystem(loggedUser) {
       setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
 
       if (loggedUser && loggedUser !== 'Anônimo') {
-        supabase.from('retronote_trash').delete().eq('id', id).then(() => {
+        supabase.from('retronote_trash').delete().eq('id', id).then(({ error: delErr }) => {
+          if (delErr) console.error('[RetroNote] Erro ao tirar da lixeira:', delErr.message);
+          
           supabase.from('retronote_folders').insert([{
             id: restoredFolder.id,
             user_id: loggedUser.id,
             name: restoredFolder.name,
             parent_id: restoredFolder.parent_id
-          }]);
+          }]).then(({ error: insErr }) => {
+            if (insErr) console.error('[RetroNote] Erro ao reinserir pasta no banco:', insErr.message);
+          });
         });
       }
     } else {
@@ -274,14 +278,18 @@ export default function useFileSystem(loggedUser) {
       setTrash(prevTrash => prevTrash.filter(n => n.id !== id));
 
       if (loggedUser && loggedUser !== 'Anônimo') {
-        supabase.from('retronote_trash').delete().eq('id', id).then(() => {
+        supabase.from('retronote_trash').delete().eq('id', id).then(({ error: delErr }) => {
+          if (delErr) console.error('[RetroNote] Erro ao tirar da lixeira:', delErr.message);
+
           supabase.from('retronote_notes').insert([{
             id: restoredNote.id,
             user_id: loggedUser.id,
             title: restoredNote.title,
             content: restoredNote.content,
             folder_id: restoredNote.folder_id
-          }]);
+          }]).then(({ error: insErr }) => {
+            if (insErr) console.error('[RetroNote] Erro ao reinserir nota no banco:', insErr.message);
+          });
         });
       }
     }
