@@ -8,6 +8,7 @@ import NotepadWindow from './components/NotepadWindow';
 import RecycleBinWindow from './components/RecycleBinWindow';
 import LoginWindow from './components/LoginWindow';
 import XPAlertWindow from './components/XPAlertWindow';
+import StartMenu from './components/StartMenu';
 
 const NOTEPAD_ICON = '/notepad-icon.png';
 const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
@@ -32,6 +33,7 @@ function App() {
   } = useWindowManager(loggedUser);
 
   const [activeMenu, setActiveMenu] = useState(null); // { id, x, y }
+  const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
 
   // Fecha qualquer menu de contexto aberto ao clicar fora
   useEffect(() => {
@@ -144,7 +146,10 @@ function App() {
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
   return (
-    <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none flex flex-col">
+    <div 
+      className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none flex flex-col"
+      onClick={() => isStartMenuOpen && setIsStartMenuOpen(false)}
+    >
       {loggedUser === 'Anônimo' && (
         <div className="w-full bg-[#ffffe1] border-b border-[#716f64] px-3 py-1 flex items-center gap-1 cursor-pointer hover:bg-[#fff9b3] z-50 shadow-md flex-shrink-0" onClick={() => {
           const vw = window.innerWidth;
@@ -160,23 +165,6 @@ function App() {
 
         {/* Ícones da Área de Trabalho sempre visíveis */}
         <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
-          <DesktopIcon
-            label="+ Nova Nota"
-            iconSrc={NEW_DOCUMENT_ICON}
-            onClick={() => {
-              if (loggedUser) handleCreateNote();
-              else {
-                const loginWin = windows.find(w => w.type === 'login');
-                if (loginWin) focusWindow(loginWin.id);
-                else {
-                  const vw = window.innerWidth;
-                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
-                }
-              }
-            }}
-            menuPos={activeMenu?.id === 'new-note' ? activeMenu : null}
-            onContextMenu={(pos) => setActiveMenu({ id: 'new-note', ...pos })}
-          />
 
           <DesktopIcon
             label="Lixeira"
@@ -296,11 +284,54 @@ function App() {
           return null;
         })}
 
-        <Taskbar windows={windows} onWindowClick={(id) => {
-          const win = windows.find(w => w.id === id);
-          if (win?.minimized) restoreWindow(id);
-          else minimizeWindow(id);
-        }} />
+        {isStartMenuOpen && (
+          <StartMenu 
+            loggedUser={loggedUser}
+            onClose={() => setIsStartMenuOpen(false)}
+            onCreateNote={() => {
+              if (loggedUser) handleCreateNote();
+              else {
+                const loginWin = windows.find(w => w.type === 'login');
+                if (loginWin) focusWindow(loginWin.id);
+                else {
+                  const vw = window.innerWidth;
+                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+                }
+              }
+            }}
+            onOpenRecycleBin={() => {
+              if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
+              else {
+                const loginWin = windows.find(w => w.type === 'login');
+                if (loginWin) focusWindow(loginWin.id);
+              }
+            }}
+            onLogout={async () => {
+              if (loggedUser) {
+                sessionStorage.removeItem('retronote_is_anon');
+                if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
+                setLoggedUser(null);
+              }
+            }}
+            onLogin={() => {
+              const vw = window.innerWidth;
+              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+            }}
+          />
+        )}
+
+        <Taskbar 
+          windows={windows} 
+          onToggleStartMenu={(val) => {
+            if (val !== undefined) setIsStartMenuOpen(val);
+            else setIsStartMenuOpen(prev => !prev);
+          }}
+          onWindowClick={(id) => {
+            const win = windows.find(w => w.id === id);
+            if (win?.minimized) restoreWindow(id);
+            else minimizeWindow(id);
+          }} 
+        />
 
       </div>
     </div>
