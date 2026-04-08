@@ -29,7 +29,7 @@ export default function StartMenu({
           title="Bloco de Notas"
         >
           <div className="w-full h-full flex items-center gap-3">
-            <img src="/notepad-icon.png" className="w-[32px] h-[32px] shrink-0" alt="Notepad" />
+            <img src="/Notepad.png" className="w-[32px] h-[32px] shrink-0" alt="Notepad" />
             <div className="flex flex-col">
               <span className="font-bold text-[12px] leading-tight flex-nowrap whitespace-nowrap" style={{ fontFamily: 'Tahoma, sans-serif' }}>Bloco de Notas</span>
             </div>
@@ -49,7 +49,7 @@ export default function StartMenu({
           }}
           title={loggedUser ? "Fazer Logout" : "Fazer Login"}
         >
-          <img src="/poweroff.png" className="w-[18px] h-[18px]" alt="Sair" />
+          <img src="/Power.png" className="w-[18px] h-[18px]" alt="Sair" />
           <span className="text-white text-[10px] font-bold drop-shadow-[1px_1px_1px_black]">
             {loggedUser ? "Sair" : "Entrar"}
           </span>

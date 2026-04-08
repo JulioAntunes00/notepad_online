@@ -9,12 +9,13 @@ import RecycleBinWindow from './components/RecycleBinWindow';
 import LoginWindow from './components/LoginWindow';
 import XPAlertWindow from './components/XPAlertWindow';
 import StartMenu from './components/StartMenu';
+import AboutWindow from './components/AboutWindow';
 
-const NOTEPAD_ICON = '/notepad-icon.png';
-const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
+const NOTEPAD_ICON = '/Notepad.png';
+const HELP_ICON = '/Help and Support.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
-const USER_ICON = '/poweroff.png';
+const USER_ICON = '/Power.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
@@ -200,7 +201,26 @@ function App() {
           ))}
         </div>
 
-        <div className="absolute top-4 right-4">
+        {/* Ícone de Login/Sair no topo direito com Sobre o Site ao lado */}
+        <div className="absolute top-4 right-4 flex items-start gap-2">
+          <DesktopIcon
+            label="Sobre o Site"
+            iconSrc={HELP_ICON}
+            onClick={() => {
+              const existingAbout = windows.find(w => w.type === 'about');
+              if (existingAbout) {
+                focusWindow(existingAbout.id);
+                restoreWindow(existingAbout.id);
+              } else {
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                openWindow('about', 'Sobre o Site', { type: 'about' }, { x: vw / 2 - 250, y: vh / 2 - 200, width: 500, height: 400 });
+              }
+            }}
+            menuPos={activeMenu?.id === 'about' ? activeMenu : null}
+            onContextMenu={(pos) => setActiveMenu({ id: 'about', ...pos })}
+          />
+
           <DesktopIcon
             label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
             iconSrc={USER_ICON}
@@ -285,6 +305,13 @@ function App() {
               />
             );
           }
+          
+          if (win.type === 'about') {
+            return (
+              <AboutWindow key={win.id} windowData={win} onClose={closeWindow} />
+            );
+          }
+          
           return null;
         })}
 
