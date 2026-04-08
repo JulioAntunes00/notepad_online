@@ -8,21 +8,25 @@ import NotepadWindow from './components/NotepadWindow';
 import RecycleBinWindow from './components/RecycleBinWindow';
 import LoginWindow from './components/LoginWindow';
 import XPAlertWindow from './components/XPAlertWindow';
+import StartMenu from './components/StartMenu';
+import AboutWindow from './components/AboutWindow';
+import FolderWindow from './components/FolderWindow';
 
-const NOTEPAD_ICON = '/notepad-icon.png';
-const NEW_DOCUMENT_ICON = 'https://cdn-icons-png.flaticon.com/512/1004/1004733.png';
+const FOLDER_ICON = '/folder-closed.png';
+const NOTEPAD_ICON = '/Notepad.png';
+const HELP_ICON = '/Help and Support.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
-const USER_ICON = 'https://cdn-icons-png.flaticon.com/512/1286/1286825.png';
+const USER_ICON = '/Power.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
 
   const {
-    notes, trash,
-    addNote, updateNoteContent, updateNoteTitle, shareNote,
-    deleteNote, restoreNote, permanentDelete, emptyTrash, migrateToCloud, duplicateNote
+    notes, folders, trash,
+    addNote, addFolder, updateNoteContent, updateNoteTitle, updateFolderTitle, shareNote,
+    deleteNote, deleteFolder, restoreNote, permanentDelete, emptyTrash, migrateToCloud, duplicateNote, moveNote, moveFolder
   } = useNotes(loggedUser);
 
   const {
@@ -32,6 +36,7 @@ function App() {
   } = useWindowManager(loggedUser);
 
   const [activeMenu, setActiveMenu] = useState(null); // { id, x, y }
+  const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
 
   // Fecha qualquer menu de contexto aberto ao clicar fora
   useEffect(() => {
@@ -40,6 +45,13 @@ function App() {
     document.addEventListener('click', handleClose);
     return () => document.removeEventListener('click', handleClose);
   }, [activeMenu]);
+
+  // Bloqueia o menu de contexto nativo do navegador em toda a aplicação
+  useEffect(() => {
+    const block = (e) => e.preventDefault();
+    document.addEventListener('contextmenu', block);
+    return () => document.removeEventListener('contextmenu', block);
+  }, []);
 
   // Inicialização simples: Verifica se há sessão
   useEffect(() => {
@@ -119,8 +131,8 @@ function App() {
     openWindow('notepad', `${note.title} - Bloco de Notas`, { noteId: note.id });
   };
 
-  const handleCreateNote = (name) => {
-    const newNote = addNote(name);
+  const handleCreateNote = (name, parentId = null) => {
+    const newNote = addNote(name || 'Nova Nota', parentId);
     openWindow('notepad', `${newNote.title} - Bloco de Notas`, { noteId: newNote.id });
   };
 
@@ -128,6 +140,37 @@ function App() {
     updateNoteTitle(noteId, newTitle);
     const win = windows.find(w => w.context?.noteId === noteId);
     if (win) updateWindow(win.id, { title: `${newTitle} - Bloco de Notas` });
+  };
+
+  const handleCreateFolder = (parentId = null) => {
+    addFolder('Nova Pasta', parentId);
+  };
+
+  const handleRenameFolder = (folderId, newTitle) => {
+    updateFolderTitle(folderId, newTitle);
+    const win = windows.find(w => w.context?.folderId === folderId);
+    if (win) updateWindow(win.id, { title: newTitle });
+  };
+
+  const handleDeleteFolder = (folderId) => {
+    const win = windows.find(w => w.context?.folderId === folderId);
+    if (win) closeWindow(win.id);
+    deleteFolder(folderId);
+  };
+
+  const handleOpenFolder = (folder) => {
+    openWindow('folder', folder.name, { folderId: folder.id });
+  };
+
+  const handleDropToDesktop = (e) => {
+    e.preventDefault();
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      if (data && data.id) {
+        if (data.type === 'note') moveNote(data.id, null);
+        if (data.type === 'folder') moveFolder(data.id, null);
+      }
+    } catch { }
   };
 
   const handleDuplicateNote = async (note) => {
@@ -141,10 +184,28 @@ function App() {
     deleteNote(noteId);
   };
 
+  const handleWindowContextMenu = (pos, winId) => {
+    setActiveMenu({ type: 'taskbar', x: pos.x, y: pos.y, winId });
+  };
+
+  const handleDesktopContextMenu = (e) => {
+    // Só abre o menu do desktop se o clique foi no fundo (não em cima de um ícone/janela)
+    const target = e.target;
+    const isDesktop = target.id === 'desktop-bg' || target.closest('#desktop-bg') && !target.closest('[role="button"]') && !target.closest('.window');
+    if (isDesktop) {
+      e.preventDefault();
+      e.stopPropagation();
+      setActiveMenu({ type: 'desktop', x: e.clientX, y: e.clientY });
+    }
+  };
+
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
   return (
-    <div className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none flex flex-col">
+    <div 
+      className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none flex flex-col"
+      onClick={() => isStartMenuOpen && setIsStartMenuOpen(false)}
+    >
       {loggedUser === 'Anônimo' && (
         <div className="w-full bg-[#ffffe1] border-b border-[#716f64] px-3 py-1 flex items-center gap-1 cursor-pointer hover:bg-[#fff9b3] z-50 shadow-md flex-shrink-0" onClick={() => {
           const vw = window.innerWidth;
@@ -156,27 +217,18 @@ function App() {
       )}
 
       {/* Container Principal que ocupa o resto do espaço */}
-      <div className="flex-1 relative w-full h-full">
+      <div 
+        id="desktop-bg"
+        className="flex-1 relative w-full h-full"
+        onContextMenu={handleDesktopContextMenu}
+        onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+        onDrop={handleDropToDesktop}
+      >
 
         {/* Ícones da Área de Trabalho sempre visíveis */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)]">
-          <DesktopIcon
-            label="+ Nova Nota"
-            iconSrc={NEW_DOCUMENT_ICON}
-            onClick={() => {
-              if (loggedUser) handleCreateNote();
-              else {
-                const loginWin = windows.find(w => w.type === 'login');
-                if (loginWin) focusWindow(loginWin.id);
-                else {
-                  const vw = window.innerWidth;
-                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
-                }
-              }
-            }}
-            menuPos={activeMenu?.id === 'new-note' ? activeMenu : null}
-            onContextMenu={(pos) => setActiveMenu({ id: 'new-note', ...pos })}
-          />
+        <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)] pointer-events-none">
+          <div className="pointer-events-auto flex flex-col gap-2">
+
 
           <DesktopIcon
             label="Lixeira"
@@ -193,9 +245,31 @@ function App() {
             onContextMenu={(pos) => setActiveMenu({ id: 'trash', ...pos })}
           />
 
-          {loggedUser && notes.map(note => (
+          {loggedUser && folders.filter(f => f.parent_id === null).map(folder => (
+            <DesktopIcon
+              key={folder.id}
+              id={folder.id}
+              type="folder"
+              label={folder.name}
+              iconSrc={FOLDER_ICON}
+              onClick={() => handleOpenFolder(folder)}
+              onRename={(newTitle) => handleRenameFolder(folder.id, newTitle)}
+              onDelete={() => handleDeleteFolder(folder.id)}
+              menuPos={activeMenu?.id === folder.id ? activeMenu : null}
+              onContextMenu={(pos) => setActiveMenu({ id: folder.id, ...pos })}
+              onCloseMenu={() => setActiveMenu(null)}
+              onDropItem={(droppedId, droppedType) => {
+                if (droppedType === 'note') moveNote(droppedId, folder.id);
+                if (droppedType === 'folder') moveFolder(droppedId, folder.id);
+              }}
+            />
+          ))}
+
+          {loggedUser && notes.filter(n => n.folder_id === null || n.folder_id === undefined).map(note => (
             <DesktopIcon
               key={note.id}
+              id={note.id}
+              type="note"
               label={note.title}
               iconSrc={NOTEPAD_ICON}
               onClick={() => handleOpenNote(note)}
@@ -204,11 +278,32 @@ function App() {
               onDelete={() => handleDeleteNote(note.id)}
               menuPos={activeMenu?.id === note.id ? activeMenu : null}
               onContextMenu={(pos) => setActiveMenu({ id: note.id, ...pos })}
+              onCloseMenu={() => setActiveMenu(null)}
             />
           ))}
+          </div>
         </div>
 
-        <div className="absolute top-4 right-4">
+        {/* Ícone de Login/Sair no topo direito com Sobre o Site ao lado */}
+        <div className="absolute top-4 right-4 flex items-start gap-2">
+          <DesktopIcon
+            label="Sobre o Site"
+            iconSrc={HELP_ICON}
+            onClick={() => {
+              const existingAbout = windows.find(w => w.type === 'about');
+              if (existingAbout) {
+                focusWindow(existingAbout.id);
+                restoreWindow(existingAbout.id);
+              } else {
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                openWindow('about', 'Sobre o Site', { type: 'about' }, { x: vw / 2 - 250, y: vh / 2 - 200, width: 500, height: 400 });
+              }
+            }}
+            menuPos={activeMenu?.id === 'about' ? activeMenu : null}
+            onContextMenu={(pos) => setActiveMenu({ id: 'about', ...pos })}
+          />
+
           <DesktopIcon
             label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
             iconSrc={USER_ICON}
@@ -254,6 +349,35 @@ function App() {
             );
           }
 
+          if (win.type === 'folder' && loggedUser) {
+            return (
+              <FolderWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                notes={notes}
+                folders={folders}
+                onOpenWindow={openWindow}
+                onRenameNote={handleRenameNote}
+                onRenameFolder={handleRenameFolder}
+                onDeleteNote={handleDeleteNote}
+                onDeleteFolder={handleDeleteFolder}
+                onCreateFolder={(parentId) => handleCreateFolder(parentId)}
+                onCreateNote={(parentId) => handleCreateNote('Nova Nota', parentId)}
+                onMoveItem={(itemId, itemType, newParentId) => {
+                  if (itemType === 'note') moveNote(itemId, newParentId);
+                  if (itemType === 'folder') moveFolder(itemId, newParentId);
+                }}
+                activeMenu={activeMenu}
+                setActiveMenu={setActiveMenu}
+              />
+            );
+          }
+
           if (win.type === 'recyclebin' && loggedUser) {
             return (
               <RecycleBinWindow
@@ -293,14 +417,164 @@ function App() {
               />
             );
           }
+          
+          if (win.type === 'about') {
+            return (
+              <AboutWindow key={win.id} windowData={win} onClose={closeWindow} />
+            );
+          }
+          
           return null;
         })}
 
-        <Taskbar windows={windows} onWindowClick={(id) => {
-          const win = windows.find(w => w.id === id);
-          if (win?.minimized) restoreWindow(id);
-          else minimizeWindow(id);
-        }} />
+        {/* Menu de Contexto da Área de Trabalho */}
+        {activeMenu?.type === 'desktop' && loggedUser && (
+          <div
+            className="fixed bg-[#ece9d8] border border-[#716f64] shadow-[2px_2px_4px_rgba(0,0,0,0.5)] py-[2px] z-[999999] min-w-[140px]"
+            style={{ 
+              top: activeMenu.y, 
+              left: activeMenu.x 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div 
+              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+              onClick={() => {
+                handleCreateFolder();
+                setActiveMenu(null);
+              }}
+            >
+              Nova Pasta
+            </div>
+            <div 
+              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+              onClick={() => {
+                handleCreateNote();
+                setActiveMenu(null);
+              }}
+            >
+              Nova Nota
+            </div>
+          </div>
+        )}
+
+        {/* Menu de Contexto da Barra de Tarefas */}
+        {activeMenu?.type === 'taskbar' && (() => {
+          const win = windows.find(w => w.id === activeMenu.winId);
+          if (!win) return null;
+          const isNotepad = win.type === 'notepad';
+          
+          return (
+            <div
+              className="fixed bg-[#ece9d8] border border-[#716f64] shadow-[2px_2px_4px_rgba(0,0,0,0.5)] py-[2px] z-[999999] min-w-[140px]"
+              style={{ 
+                bottom: '31px', 
+                left: Math.min(activeMenu.x, window.innerWidth - 150) 
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div 
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+                onClick={() => {
+                  if (win.minimized) restoreWindow(win.id);
+                  else focusWindow(win.id);
+                  setActiveMenu(null);
+                }}
+              >
+                {win.minimized ? 'Restaurar' : 'Focar'}
+              </div>
+
+              <div 
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+                onClick={() => {
+                  if (!win.minimized) minimizeWindow(win.id);
+                  else restoreWindow(win.id);
+                  setActiveMenu(null);
+                }}
+              >
+                {win.minimized ? 'Maximizar' : 'Minimizar'}
+              </div>
+
+              {isNotepad && (
+                <>
+                  <div className="border-t border-[#aca899] my-[2px] mx-1" />
+                  <div 
+                    className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default text-red-700" 
+                    onClick={() => {
+                      if (win.context?.noteId) handleDeleteNote(win.context.noteId);
+                      setActiveMenu(null);
+                    }}
+                  >
+                    Deletar Nota
+                  </div>
+                </>
+              )}
+
+              <div className="border-t border-[#aca899] my-[2px] mx-1" />
+              
+              <div 
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold" 
+                onClick={() => {
+                  closeWindow(win.id);
+                  setActiveMenu(null);
+                }}
+              >
+                Fechar
+              </div>
+            </div>
+          );
+        })()}
+
+        {isStartMenuOpen && (
+          <StartMenu 
+            loggedUser={loggedUser}
+            onClose={() => setIsStartMenuOpen(false)}
+            onCreateNote={() => {
+              if (loggedUser) handleCreateNote();
+              else {
+                const loginWin = windows.find(w => w.type === 'login');
+                if (loginWin) focusWindow(loginWin.id);
+                else {
+                  const vw = window.innerWidth;
+                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+                }
+              }
+            }}
+            onOpenRecycleBin={() => {
+              if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
+              else {
+                const loginWin = windows.find(w => w.type === 'login');
+                if (loginWin) focusWindow(loginWin.id);
+              }
+            }}
+            onLogout={async () => {
+              if (loggedUser) {
+                sessionStorage.removeItem('retronote_is_anon');
+                if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
+                setLoggedUser(null);
+              }
+            }}
+            onLogin={() => {
+              const vw = window.innerWidth;
+              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+            }}
+          />
+        )}
+
+        <Taskbar 
+          windows={windows} 
+          activeWindowId={windows.find(w => w.zIndex === Math.max(...windows.map(win => win.zIndex), 0))?.id}
+          onToggleStartMenu={(val) => {
+            if (val !== undefined) setIsStartMenuOpen(val);
+            else setIsStartMenuOpen(prev => !prev);
+          }}
+          onWindowClick={(id) => {
+            const win = windows.find(w => w.id === id);
+            if (win?.minimized) restoreWindow(id);
+            else minimizeWindow(id);
+          }} 
+          onWindowContextMenu={handleWindowContextMenu}
+        />
 
       </div>
     </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export default function LoginWindow({
@@ -75,10 +75,12 @@ export default function LoginWindow({
     onLogin('Anônimo');
   };
 
-  if (minimized) return null;
+  const windowStyle = minimized
+    ? { display: 'none' }
+    : { top: y, left: x, width, height, zIndex };
 
   return (
-    <div className="window absolute flex flex-col shadow-[2px_2px_15px_rgba(0,0,0,0.5)]" style={{ top: y, left: x, width, height, zIndex }} onMouseDown={() => onFocus(id)}>
+    <div className="window absolute flex flex-col shadow-[2px_2px_15px_rgba(0,0,0,0.5)]" style={windowStyle} onMouseDown={() => onFocus(id)}>
       <div className="title-bar" onMouseDown={handleDragStart}>
         <div className="title-bar-text">Entrar no Sistema</div>
         <div className="title-bar-controls">

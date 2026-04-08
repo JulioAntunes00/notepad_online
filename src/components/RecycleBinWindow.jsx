@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 
 export default function RecycleBinWindow({
   windowData,
@@ -45,11 +45,11 @@ export default function RecycleBinWindow({
     document.addEventListener('mouseup', onUp);
   };
 
-  if (minimized) return null;
-
-  const windowStyle = maximized
-    ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 32px)', zIndex }
-    : { top: y, left: x, width, height, zIndex };
+  const windowStyle = minimized
+    ? { display: 'none' }
+    : maximized
+      ? { top: 0, left: 0, width: '100%', height: 'calc(100% - 32px)', zIndex }
+      : { top: y, left: x, width, height, zIndex };
 
   const resizeHandles = [
     { dir: 'n', cls: 'absolute top-0 left-2 right-2 h-1 cursor-n-resize' },
@@ -79,6 +79,10 @@ export default function RecycleBinWindow({
     return `${Math.ceil(remaining)} dia(s)`;
   };
 
+  // Só mostra itens "raiz" (iguala ao Windows: pasta deletada aparece sozinha, filhos ficam escondidos)
+  const trashIds = new Set(trashItems.map(t => t.id));
+  const visibleItems = trashItems.filter(item => !item.folder_id || !trashIds.has(item.folder_id));
+
   return (
     <div className="window absolute flex flex-col shadow-[2px_2px_15px_rgba(0,0,0,0.5)]" style={windowStyle} onMouseDown={() => onFocus(id)}>
       {!maximized && resizeHandles.map(h => (
@@ -106,7 +110,7 @@ export default function RecycleBinWindow({
             🗑️ Esvaziar Lixeira
           </button>
           <span className="text-[#808080]">|</span>
-          <span>{trashItems.length} item(ns)</span>
+          <span>{visibleItems.length} item(ns)</span>
         </div>
 
         <div className="flex items-center bg-[#ece9d8] border-b border-[#aca899] text-[11px] font-bold select-none px-2 py-[2px]">
@@ -117,14 +121,14 @@ export default function RecycleBinWindow({
         </div>
 
         <div className="flex-1 bg-white overflow-y-auto">
-          {trashItems.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[#808080] text-sm">
               A Lixeira está vazia.
             </div>
           ) : (
-            trashItems.map(item => (
+            visibleItems.map(item => (
               <div key={item.id} className="flex items-center px-2 py-1 border-b border-[#f0f0f0] text-[12px] hover:bg-[#e8e8e8]">
-                <span className="flex-1 truncate">📄 {item.title}</span>
+                <span className="flex-1 truncate">{item.item_type === 'folder' ? '📁' : '📄'} {item.title}</span>
                 <span className="w-[130px] text-center text-[#808080]">{formatDate(item.deleted_at || item.deletedAt)}</span>
                 <span className="w-[100px] text-center text-[#808080]">{daysLeft(item.deleted_at || item.deletedAt)}</span>
                 <span className="w-[80px] text-center">
@@ -141,7 +145,7 @@ export default function RecycleBinWindow({
         </div>
 
         <div className="status-bar !m-0 !py-1">
-          <p className="status-bar-field">{trashItems.length} objeto(s)</p>
+          <p className="status-bar-field">{visibleItems.length} objeto(s)</p>
           <p className="status-bar-field">Exclusão automática: 3 dias</p>
         </div>
       </div>
