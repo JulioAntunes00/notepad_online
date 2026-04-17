@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function StartMenu({
   loggedUser,
@@ -8,6 +9,7 @@ export default function StartMenu({
   onLogout,
   onLogin
 }) {
+  const { t } = useTranslation();
   return (
     <div
       className="absolute bottom-[30px] left-0 rounded-t-[10px] overflow-hidden flex flex-col z-[10000] shadow-[4px_4px_10px_rgba(0,0,0,0.5)] select-none"
@@ -31,7 +33,7 @@ export default function StartMenu({
           <div className="w-full h-full flex items-center gap-3">
             <img src="/Notepad.png" className="w-[32px] h-[32px] shrink-0" alt="Notepad" />
             <div className="flex flex-col">
-              <span className="font-bold text-[12px] leading-tight flex-nowrap whitespace-nowrap" style={{ fontFamily: 'Tahoma, sans-serif' }}>Bloco de Notas</span>
+              <span className="font-bold text-[12px] leading-tight flex-nowrap whitespace-nowrap" style={{ fontFamily: 'Tahoma, sans-serif' }}>{t('startMenu.notepad')}</span>
             </div>
           </div>
         </div>
@@ -47,11 +49,11 @@ export default function StartMenu({
             else onLogin();
             onClose();
           }}
-          title={loggedUser ? "Fazer Logout" : "Fazer Login"}
+          title={loggedUser ? t('startMenu.logoutTooltip') : t('startMenu.loginTooltip')}
         >
           <img src="/Power.png" className="w-[18px] h-[18px]" alt="Sair" />
           <span className="text-white text-[10px] font-bold drop-shadow-[1px_1px_1px_black]">
-            {loggedUser ? "Sair" : "Entrar"}
+            {loggedUser ? t('startMenu.logout') : t('startMenu.enter')}
           </span>
         </div>
       </div>

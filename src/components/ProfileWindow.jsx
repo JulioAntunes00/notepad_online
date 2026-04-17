@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 
 export default function ProfileWindow({
@@ -9,6 +10,7 @@ export default function ProfileWindow({
   loggedUser,
   onShowAlert,
 }) {
+  const { t } = useTranslation();
   const { id, minimized, zIndex, x, y, width, height } = windowData;
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -31,9 +33,9 @@ export default function ProfileWindow({
 
   const displayName = loggedUser?.user_metadata?.display_name
     || loggedUser?.email?.split('@')[0]
-    || 'Usuário';
+    || t('profileWindow.username').replace(':', '');
 
-  const displayEmail = loggedUser?.user_metadata?.recovery_email || '(nenhum cadastrado)';
+  const displayEmail = loggedUser?.user_metadata?.recovery_email || t('profileWindow.none');
   const accountEmail = loggedUser?.email || '';
 
   const handleChangePassword = async (e) => {
@@ -42,10 +44,10 @@ export default function ProfileWindow({
     setSuccess('');
 
     if (!newPassword || newPassword.length < 8) {
-      return setError('A nova senha deve ter pelo menos 8 caracteres.');
+      return setError(t('profileWindow.passwordMinError'));
     }
     if (newPassword !== confirmPassword) {
-      return setError('As senhas não coincidem.');
+      return setError(t('profileWindow.passwordMismatch'));
     }
 
     setLoading(true);
@@ -58,7 +60,7 @@ export default function ProfileWindow({
 
       if (signInErr) {
         setLoading(false);
-        return setError('Senha atual incorreta.');
+        return setError(t('profileWindow.wrongCurrentPassword'));
       }
 
       // Update password
@@ -71,13 +73,13 @@ export default function ProfileWindow({
         return setError(updateErr.message);
       }
 
-      setSuccess('Senha alterada com sucesso!');
+      setSuccess(t('profileWindow.passwordChanged'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setLoading(false);
     } catch (err) {
-      setError('Erro ao alterar senha.');
+      setError(t('profileWindow.changeError'));
       setLoading(false);
     }
   };
@@ -89,7 +91,7 @@ export default function ProfileWindow({
   return (
     <div className="window absolute flex flex-col" style={windowStyle} onMouseDown={() => onFocus(id)}>
       <div className="title-bar" onMouseDown={handleDragStart}>
-        <div className="title-bar-text">Meu Perfil</div>
+        <div className="title-bar-text">{t('profileWindow.title')}</div>
         <div className="title-bar-controls">
           <button aria-label="Close" onClick={() => onClose(id)} />
         </div>
@@ -98,20 +100,20 @@ export default function ProfileWindow({
       <div className="window-body flex-1 !m-[3px] bg-[#ece9d8] flex flex-col p-4 overflow-auto">
         {/* Informações do Usuário */}
         <fieldset style={{ backgroundColor: 'transparent' }}>
-          <legend>Informações da Conta</legend>
+          <legend>{t('profileWindow.accountInfo')}</legend>
           <div className="flex flex-col gap-2 p-1">
             <div className="field-row">
-              <label className="w-28 text-right font-bold text-[11px]">Usuário:</label>
+              <label className="w-28 text-right font-bold text-[11px]">{t('profileWindow.username')}</label>
               <span className="text-[12px]">{displayName}</span>
             </div>
             {!accountEmail.includes('@retronote.local') && (
               <div className="field-row">
-                <label className="w-28 text-right font-bold text-[11px]">E-mail da conta:</label>
+                <label className="w-28 text-right font-bold text-[11px]">{t('profileWindow.accountEmail')}</label>
                 <span className="text-[12px] text-gray-600">{accountEmail}</span>
               </div>
             )}
             <div className="field-row">
-              <label className="w-28 text-right font-bold text-[11px]">E-mail recuperação:</label>
+              <label className="w-28 text-right font-bold text-[11px]">{t('profileWindow.recoveryEmail')}</label>
               <span className="text-[12px] text-gray-600">{displayEmail}</span>
             </div>
           </div>
@@ -119,20 +121,20 @@ export default function ProfileWindow({
 
         {/* Alterar Senha */}
         <fieldset className="mt-3" style={{ backgroundColor: 'transparent' }}>
-          <legend>Alterar Senha</legend>
+          <legend>{t('profileWindow.changePassword')}</legend>
           <form className="flex flex-col gap-2 p-1" onSubmit={handleChangePassword}>
             <div className="field-row-stacked" style={{ width: '100%' }}>
-              <label htmlFor="cur-pass">Senha atual:</label>
+              <label htmlFor="cur-pass">{t('profileWindow.currentPassword')}</label>
               <input id="cur-pass" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
             </div>
 
             <div className="field-row-stacked" style={{ width: '100%' }}>
-              <label htmlFor="new-pass">Nova senha (mín. 8 caracteres):</label>
+              <label htmlFor="new-pass">{t('profileWindow.newPassword')}</label>
               <input id="new-pass" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
 
             <div className="field-row-stacked" style={{ width: '100%' }}>
-              <label htmlFor="confirm-pass">Confirmar nova senha:</label>
+              <label htmlFor="confirm-pass">{t('profileWindow.confirmNewPassword')}</label>
               <input id="confirm-pass" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             </div>
 
@@ -141,9 +143,9 @@ export default function ProfileWindow({
 
             <div className="flex justify-end gap-2 mt-2">
               <button type="submit" style={{ minWidth: 110 }} disabled={loading}>
-                {loading ? 'Salvando...' : 'Alterar Senha'}
+                {loading ? t('profileWindow.saving') : t('profileWindow.changePassword')}
               </button>
-              <button type="button" style={{ minWidth: 80 }} onClick={() => onClose(id)}>Fechar</button>
+              <button type="button" style={{ minWidth: 80 }} onClick={() => onClose(id)}>{t('profileWindow.close')}</button>
             </div>
           </form>
         </fieldset>
@@ -152,9 +154,9 @@ export default function ProfileWindow({
         <div className="mt-4 p-3 bg-[#ffffcc] border border-[#aca899] rounded shadow-sm flex items-start gap-3">
           <span className="text-2xl mt-[-2px]">❔</span>
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold text-[#0038b3]">Ajuda e Suporte</span>
+            <span className="text-[11px] font-bold text-[#0038b3]">{t('profileWindow.helpTitle')}</span>
             <p className="text-[10px] text-gray-700 m-0 leading-tight">
-              Problemas com sua conta ou arquivos? Entre em contato com nossa equipe técnica:
+              {t('profileWindow.helpText')}
               <br />
               <a href="mailto:web.ti@live.com" className="text-blue-700 font-bold hover:underline">web.ti@live.com</a>
             </p>

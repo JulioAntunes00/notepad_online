@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from './lib/supabase';
 import useWindowManager from './hooks/useWindowManager';
 import useNotes from './hooks/useNotes';
@@ -25,6 +26,7 @@ const PROFILE_ICON = '/Help and Support.png';
 const ADMIN_ICON = '/admin-panel.png';
 
 function App() {
+  const { t } = useTranslation();
   const [loggedUser, setLoggedUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -97,33 +99,24 @@ function App() {
     if (!hasSeenOnboarding && notes.length === 0 && folders.length === 0) {
       localStorage.setItem(storageKey, 'true');
 
-      // 1. Cria a pasta "Meus Documentos"
-      const defaultFolder = addFolder('Meus Documentos');
+      // 1. Cria a pasta padrão
+      const defaultFolder = addFolder(t('onboarding.defaultFolder'));
 
-      // 2. Cria a nota de boas-vindas na Área de Trabalho (raiz)
-      const welcomeTitle = 'Explicação de Início';
+      // 2. Cria a nota de boas-vindas
+      const welcomeTitle = t('onboarding.welcomeTitle');
       const newNote = addNote(welcomeTitle, null);
 
       if (newNote) {
         const isAnon = loggedUser === 'Anônimo';
-        const welcomeContent = `<div><span style="font-size: 18px;"><b>Bem-vindo ao RetroNote XP! 🌠</b></span></div>
+        const welcomeContent = `<div><span style="font-size: 18px;"><b>${t('onboarding.welcomeHeading')}</b></span></div>
 <br>
-<div>Este é o seu novo espaço para organizar ideias com a nostalgia dos anos 2000.</div>
-<br>
-<div><b>O que acabou de acontecer?</b></div>
-<div>• Criamos automaticamente uma pasta chamada <b>"Meus Documentos"</b>.</div>
-<div>• Criamos este <b>Bloco de Notas</b> diretamente na sua Área de Trabalho para facilitar seu início.</div>
-<br>
-<div><b>Dicas Rápidas:</b></div>
-<div>• <b>Salvamento:</b> Tudo o que você digita aqui é salvo automaticamente.</div>
-<div>• <b>Organização:</b> Você pode arrastar este arquivo para dentro da pasta "Meus Documentos" se desejar.</div>
-<div>• <b>Botão Direito:</b> Clique com o botão direito nos ícones para renomear, deletar ou criar novos itens.</div>
+<div>${t('onboarding.welcomeIntro')}</div>
 <br>
 ${isAnon ?
-            '<div><b>⚠️ Aviso Importante:</b> Como Visitante, seus dados residem <u>apenas neste navegador</u>. Se você limpar o cache ou trocar de PC, perderá suas notas.</div><br><div><b>💡 Dica:</b> Crie uma conta para sincronizar tudo na nuvem com segurança!</div>' :
-            '<div><b>✅ Sincronização Ativa:</b> Suas notas estão seguras na nuvem e podem ser acessadas de qualquer lugar!</div>'}
+            `<div><b>💡 ${t('onboarding.anonTip')}</b></div>` :
+            `<div><b>✅ ${t('onboarding.syncActive')}</b></div>`}
 <br>
-<div>Aproveite a experiência! 🚀</div>`;
+<div>${t('onboarding.enjoy')}</div>`;
 
         updateNoteContent(newNote.id, welcomeContent);
 
@@ -133,7 +126,7 @@ ${isAnon ?
 
         // Pequeno delay para garantir que o estado local dos ícones foi atualizado
         setTimeout(() => {
-          openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, {
+          openWindow('notepad', `${welcomeTitle} - ${t('onboarding.notepadSuffix')}`, { noteId: newNote.id }, {
             x: Math.max(0, vw / 2 - 360),
             y: Math.max(0, vh / 2 - 270),
             width: 720,
@@ -153,7 +146,7 @@ ${isAnon ?
       restoreWindow(existing.id);
     } else {
       const vw = window.innerWidth;
-      openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 240, y: 60, width: 480, height: 384 });
+      openWindow('login', t('loginWindow.title'), { type: 'login' }, { x: vw / 2 - 240, y: 60, width: 480, height: 384 });
     }
   };
 
@@ -186,22 +179,22 @@ ${isAnon ?
   };
 
   const handleOpenNote = (note) => {
-    openWindow('notepad', `${note.title} - Bloco de Notas`, { noteId: note.id });
+    openWindow('notepad', `${note.title} - ${t('notepadWindow.suffix')}`, { noteId: note.id });
   };
 
   const handleCreateNote = (name, parentId = null) => {
-    const newNote = addNote(name || 'Nova Nota', parentId);
-    openWindow('notepad', `${newNote.title} - Bloco de Notas`, { noteId: newNote.id });
+    const newNote = addNote(name || t('contextMenu.newNote'), parentId);
+    openWindow('notepad', `${newNote.title} - ${t('notepadWindow.suffix')}`, { noteId: newNote.id });
   };
 
   const handleRenameNote = (noteId, newTitle) => {
     updateNoteTitle(noteId, newTitle);
     const win = windows.find(w => w.context?.noteId === noteId);
-    if (win) updateWindow(win.id, { title: `${newTitle} - Bloco de Notas` });
+    if (win) updateWindow(win.id, { title: `${newTitle} - ${t('notepadWindow.suffix')}` });
   };
 
   const handleCreateFolder = (parentId = null) => {
-    addFolder('Nova Pasta', parentId);
+    addFolder(t('contextMenu.newFolder'), parentId);
   };
 
   const handleRenameFolder = (folderId, newTitle) => {
@@ -281,8 +274,8 @@ ${isAnon ?
             className="absolute bottom-12 right-6 flex flex-col items-end text-white text-right pointer-events-none opacity-80 z-50"
             style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
           >
-            <span className="text-xl font-bold font-sans">Modo Visitante</span>
-            <span className="text-sm">Seus dados serão perdidos ao limpar o navegador.</span>
+            <span className="text-xl font-bold font-sans">{t('visitor.title')}</span>
+            <span className="text-sm">{t('visitor.warning')}</span>
             <span
               className="text-xs mt-1 text-[#ffffcc] underline cursor-pointer pointer-events-auto hover:text-white"
               onClick={(e) => {
@@ -290,7 +283,7 @@ ${isAnon ?
                 handleLogout();
               }}
             >
-              Clique aqui para sair e criar uma conta
+              {t('visitor.createAccount')}
             </span>
           </div>
         )}
@@ -301,10 +294,10 @@ ${isAnon ?
 
 
             <DesktopIcon
-              label="Lixeira"
+              label={t('desktop.recycleBin')}
               iconSrc={trashIcon}
               onClick={() => {
-                if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
+                if (loggedUser) openWindow('recyclebin', t('desktop.recycleBin'), { type: 'recyclebin' });
                 else {
                   const loginWin = windows.find(w => w.type === 'login');
                   if (loginWin) focusWindow(loginWin.id);
@@ -357,7 +350,7 @@ ${isAnon ?
         {/* Ícone de Login/Sair no topo direito com Sobre o Site ao lado */}
         <div className="absolute top-4 right-4 flex items-start gap-2">
           <DesktopIcon
-            label="Sobre o Site"
+            label={t('desktop.aboutSite')}
             iconSrc={HELP_ICON}
             onClick={() => {
               const existingAbout = windows.find(w => w.type === 'about');
@@ -367,7 +360,7 @@ ${isAnon ?
               } else {
                 const vw = window.innerWidth;
                 const vh = window.innerHeight;
-                openWindow('about', 'Sobre o Site', { type: 'about' }, { x: vw / 2 - 300, y: vh / 2 - 240, width: 600, height: 480 });
+                openWindow('about', t('desktop.aboutSite'), { type: 'about' }, { x: vw / 2 - 300, y: vh / 2 - 240, width: 600, height: 480 });
               }
             }}
             menuPos={activeMenu?.id === 'about' ? activeMenu : null}
@@ -375,7 +368,7 @@ ${isAnon ?
           />
 
           <DesktopIcon
-            label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
+            label={loggedUser ? (loggedUser === 'Anônimo' ? t('desktop.logoutVisitor') : t('desktop.logout')) : t('desktop.login')}
             iconSrc={USER_ICON}
             onClick={handleLogout}
             menuPos={activeMenu?.id === 'auth' ? activeMenu : null}
@@ -384,7 +377,7 @@ ${isAnon ?
 
           {loggedUser && loggedUser !== 'Anônimo' && (
             <DesktopIcon
-              label="Meu Perfil"
+              label={t('desktop.myProfile')}
               iconSrc={PROFILE_ICON}
               onClick={() => {
                 const existing = windows.find(w => w.type === 'profile');
@@ -394,7 +387,7 @@ ${isAnon ?
                 } else {
                   const vw = window.innerWidth;
                   const vh = window.innerHeight;
-                  openWindow('profile', 'Meu Perfil', { type: 'profile' }, { x: vw / 2 - 240, y: vh / 2 - 264, width: 480, height: 528 });
+                  openWindow('profile', t('desktop.myProfile'), { type: 'profile' }, { x: vw / 2 - 240, y: vh / 2 - 264, width: 480, height: 528 });
                 }
               }}
               menuPos={activeMenu?.id === 'profile' ? activeMenu : null}
@@ -404,7 +397,7 @@ ${isAnon ?
 
           {isAdmin && (
             <DesktopIcon
-              label="Painel Admin"
+              label={t('desktop.adminPanel')}
               iconSrc={ADMIN_ICON}
               onClick={() => {
                 const existing = windows.find(w => w.type === 'admin');
@@ -414,7 +407,7 @@ ${isAnon ?
                 } else {
                   const vw = window.innerWidth;
                   const vh = window.innerHeight;
-                  openWindow('admin', 'Painel de Controle — Usuários', { type: 'admin' }, { x: vw / 2 - 420, y: vh / 2 - 300, width: 840, height: 600 });
+                  openWindow('admin', t('desktop.adminPanelTitle'), { type: 'admin' }, { x: vw / 2 - 420, y: vh / 2 - 300, width: 840, height: 600 });
                 }
               }}
               menuPos={activeMenu?.id === 'admin' ? activeMenu : null}
@@ -575,7 +568,7 @@ ${isAnon ?
                 setActiveMenu(null);
               }}
             >
-              Nova Pasta
+              {t('contextMenu.newFolder')}
             </div>
             <div
               className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
@@ -584,7 +577,7 @@ ${isAnon ?
                 setActiveMenu(null);
               }}
             >
-              Nova Nota
+              {t('contextMenu.newNote')}
             </div>
           </div>
         )}
@@ -612,7 +605,7 @@ ${isAnon ?
                   setActiveMenu(null);
                 }}
               >
-                {win.minimized ? 'Restaurar' : 'Focar'}
+                {win.minimized ? t('contextMenu.restore') : t('contextMenu.focus')}
               </div>
 
               <div
@@ -623,7 +616,7 @@ ${isAnon ?
                   setActiveMenu(null);
                 }}
               >
-                {win.minimized ? 'Maximizar' : 'Minimizar'}
+                {win.minimized ? t('contextMenu.maximize') : t('contextMenu.minimize')}
               </div>
 
               {isNotepad && (
@@ -636,7 +629,7 @@ ${isAnon ?
                       setActiveMenu(null);
                     }}
                   >
-                    Deletar Nota
+                    {t('contextMenu.deleteNote')}
                   </div>
                 </>
               )}
@@ -650,7 +643,7 @@ ${isAnon ?
                   setActiveMenu(null);
                 }}
               >
-                Fechar
+                {t('contextMenu.close')}
               </div>
             </div>
           );
@@ -667,7 +660,7 @@ ${isAnon ?
               }
             }}
             onOpenRecycleBin={() => {
-              if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
+              if (loggedUser) openWindow('recyclebin', t('desktop.recycleBin'), { type: 'recyclebin' });
               else {
                 handleOpenLogin();
               }
