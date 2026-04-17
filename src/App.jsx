@@ -96,14 +96,14 @@ function App() {
     // Se o usuário não tiver nada e nunca viu o onboarding, cria a estrutura inicial
     if (!hasSeenOnboarding && notes.length === 0 && folders.length === 0) {
       localStorage.setItem(storageKey, 'true');
-      
+
       // 1. Cria a pasta "Meus Documentos"
       const defaultFolder = addFolder('Meus Documentos');
-      
+
       // 2. Cria a nota de boas-vindas na Área de Trabalho (raiz)
       const welcomeTitle = 'Explicação de Início';
       const newNote = addNote(welcomeTitle, null);
-      
+
       if (newNote) {
         const isAnon = loggedUser === 'Anônimo';
         const welcomeContent = `<div><span style="font-size: 18px;"><b>Bem-vindo ao RetroNote XP! 🌠</b></span></div>
@@ -119,25 +119,25 @@ function App() {
 <div>• <b>Organização:</b> Você pode arrastar este arquivo para dentro da pasta "Meus Documentos" se desejar.</div>
 <div>• <b>Botão Direito:</b> Clique com o botão direito nos ícones para renomear, deletar ou criar novos itens.</div>
 <br>
-${isAnon ? 
-  '<div><b>⚠️ Aviso Importante:</b> Como Visitante, seus dados residem <u>apenas neste navegador</u>. Se você limpar o cache ou trocar de PC, perderá suas notas.</div><br><div><b>💡 Dica:</b> Crie uma conta para sincronizar tudo na nuvem com segurança!</div>' : 
-  '<div><b>✅ Sincronização Ativa:</b> Suas notas estão seguras na nuvem e podem ser acessadas de qualquer lugar!</div>'}
+${isAnon ?
+            '<div><b>⚠️ Aviso Importante:</b> Como Visitante, seus dados residem <u>apenas neste navegador</u>. Se você limpar o cache ou trocar de PC, perderá suas notas.</div><br><div><b>💡 Dica:</b> Crie uma conta para sincronizar tudo na nuvem com segurança!</div>' :
+            '<div><b>✅ Sincronização Ativa:</b> Suas notas estão seguras na nuvem e podem ser acessadas de qualquer lugar!</div>'}
 <br>
 <div>Aproveite a experiência! 🚀</div>`;
 
         updateNoteContent(newNote.id, welcomeContent);
-        
+
         // 3. Abre a janela da nota com uma posição centralizada
         const vw = window.innerWidth;
         const vh = window.innerHeight;
-        
+
         // Pequeno delay para garantir que o estado local dos ícones foi atualizado
         setTimeout(() => {
-          openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, { 
-            x: Math.max(0, vw / 2 - 360), 
-            y: Math.max(0, vh / 2 - 270), 
-            width: 720, 
-            height: 540 
+          openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, {
+            x: Math.max(0, vw / 2 - 360),
+            y: Math.max(0, vh / 2 - 270),
+            width: 720,
+            height: 540
           });
         }, 100);
       }
@@ -260,30 +260,30 @@ ${isAnon ?
   const trashIcon = trash.length > 0 ? TRASH_FULL_ICON : TRASH_EMPTY_ICON;
 
   return (
-    <div 
+    <div
       className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none flex flex-col"
       onClick={() => isStartMenuOpen && setIsStartMenuOpen(false)}
     >
 
 
       {/* Container Principal que ocupa o resto do espaço */}
-      <div 
+      <div
         id="desktop-bg"
         className="flex-1 relative w-full h-full"
         onContextMenu={handleDesktopContextMenu}
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
         onDrop={handleDropToDesktop}
       >
-        
+
         {/* Marca d'Água de Modo Visitante */}
         {loggedUser === 'Anônimo' && (
-          <div 
+          <div
             className="absolute bottom-12 right-6 flex flex-col items-end text-white text-right pointer-events-none opacity-80 z-50"
             style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
           >
             <span className="text-xl font-bold font-sans">Modo Visitante</span>
             <span className="text-sm">Seus dados serão perdidos ao limpar o navegador.</span>
-            <span 
+            <span
               className="text-xs mt-1 text-[#ffffcc] underline cursor-pointer pointer-events-auto hover:text-white"
               onClick={(e) => {
                 e.stopPropagation();
@@ -300,57 +300,57 @@ ${isAnon ?
           <div className="pointer-events-auto flex flex-col gap-2">
 
 
-          <DesktopIcon
-            label="Lixeira"
-            iconSrc={trashIcon}
-            onClick={() => {
-              if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
-              else {
-                const loginWin = windows.find(w => w.type === 'login');
-                if (loginWin) focusWindow(loginWin.id);
-              }
-            }}
-            onEmptyTrash={emptyTrash}
-            menuPos={activeMenu?.id === 'trash' ? activeMenu : null}
-            onContextMenu={(pos) => setActiveMenu({ id: 'trash', ...pos })}
-          />
-
-          {loggedUser && folders.filter(f => f.parent_id === null).map(folder => (
             <DesktopIcon
-              key={folder.id}
-              id={folder.id}
-              type="folder"
-              label={folder.name}
-              iconSrc={FOLDER_ICON}
-              onClick={() => handleOpenFolder(folder)}
-              onRename={(newTitle) => handleRenameFolder(folder.id, newTitle)}
-              onDelete={() => handleDeleteFolder(folder.id)}
-              menuPos={activeMenu?.id === folder.id ? activeMenu : null}
-              onContextMenu={(pos) => setActiveMenu({ id: folder.id, ...pos })}
-              onCloseMenu={() => setActiveMenu(null)}
-              onDropItem={(droppedId, droppedType) => {
-                if (droppedType === 'note') moveNote(droppedId, folder.id);
-                if (droppedType === 'folder') moveFolder(droppedId, folder.id);
+              label="Lixeira"
+              iconSrc={trashIcon}
+              onClick={() => {
+                if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
+                else {
+                  const loginWin = windows.find(w => w.type === 'login');
+                  if (loginWin) focusWindow(loginWin.id);
+                }
               }}
+              onEmptyTrash={emptyTrash}
+              menuPos={activeMenu?.id === 'trash' ? activeMenu : null}
+              onContextMenu={(pos) => setActiveMenu({ id: 'trash', ...pos })}
             />
-          ))}
 
-          {loggedUser && notes.filter(n => n.folder_id === null || n.folder_id === undefined).map(note => (
-            <DesktopIcon
-              key={note.id}
-              id={note.id}
-              type="note"
-              label={note.title}
-              iconSrc={NOTEPAD_ICON}
-              onClick={() => handleOpenNote(note)}
-              onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
-              onDuplicate={() => handleDuplicateNote(note)}
-              onDelete={() => handleDeleteNote(note.id)}
-              menuPos={activeMenu?.id === note.id ? activeMenu : null}
-              onContextMenu={(pos) => setActiveMenu({ id: note.id, ...pos })}
-              onCloseMenu={() => setActiveMenu(null)}
-            />
-          ))}
+            {loggedUser && folders.filter(f => f.parent_id === null).map(folder => (
+              <DesktopIcon
+                key={folder.id}
+                id={folder.id}
+                type="folder"
+                label={folder.name}
+                iconSrc={FOLDER_ICON}
+                onClick={() => handleOpenFolder(folder)}
+                onRename={(newTitle) => handleRenameFolder(folder.id, newTitle)}
+                onDelete={() => handleDeleteFolder(folder.id)}
+                menuPos={activeMenu?.id === folder.id ? activeMenu : null}
+                onContextMenu={(pos) => setActiveMenu({ id: folder.id, ...pos })}
+                onCloseMenu={() => setActiveMenu(null)}
+                onDropItem={(droppedId, droppedType) => {
+                  if (droppedType === 'note') moveNote(droppedId, folder.id);
+                  if (droppedType === 'folder') moveFolder(droppedId, folder.id);
+                }}
+              />
+            ))}
+
+            {loggedUser && notes.filter(n => n.folder_id === null || n.folder_id === undefined).map(note => (
+              <DesktopIcon
+                key={note.id}
+                id={note.id}
+                type="note"
+                label={note.title}
+                iconSrc={NOTEPAD_ICON}
+                onClick={() => handleOpenNote(note)}
+                onRename={(newTitle) => handleRenameNote(note.id, newTitle)}
+                onDuplicate={() => handleDuplicateNote(note)}
+                onDelete={() => handleDeleteNote(note.id)}
+                menuPos={activeMenu?.id === note.id ? activeMenu : null}
+                onContextMenu={(pos) => setActiveMenu({ id: note.id, ...pos })}
+                onCloseMenu={() => setActiveMenu(null)}
+              />
+            ))}
           </div>
         </div>
 
@@ -518,7 +518,7 @@ ${isAnon ?
               />
             );
           }
-          
+
           if (win.type === 'about') {
             return (
               <AboutWindow key={win.id} windowData={win} onClose={closeWindow} />
@@ -554,7 +554,7 @@ ${isAnon ?
               />
             );
           }
-          
+
           return null;
         })}
 
@@ -562,14 +562,14 @@ ${isAnon ?
         {activeMenu?.type === 'desktop' && loggedUser && (
           <div
             className="fixed bg-[#ece9d8] border border-[#716f64] shadow-[2px_2px_4px_rgba(0,0,0,0.5)] py-[2px] z-[999999] min-w-[140px]"
-            style={{ 
-              top: activeMenu.y, 
-              left: activeMenu.x 
+            style={{
+              top: activeMenu.y,
+              left: activeMenu.x
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div 
-              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+            <div
+              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
               onClick={() => {
                 handleCreateFolder();
                 setActiveMenu(null);
@@ -577,8 +577,8 @@ ${isAnon ?
             >
               Nova Pasta
             </div>
-            <div 
-              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+            <div
+              className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
               onClick={() => {
                 handleCreateNote();
                 setActiveMenu(null);
@@ -594,18 +594,18 @@ ${isAnon ?
           const win = windows.find(w => w.id === activeMenu.winId);
           if (!win) return null;
           const isNotepad = win.type === 'notepad';
-          
+
           return (
             <div
               className="fixed bg-[#ece9d8] border border-[#716f64] shadow-[2px_2px_4px_rgba(0,0,0,0.5)] py-[2px] z-[999999] min-w-[140px]"
-              style={{ 
-                bottom: '31px', 
-                left: Math.min(activeMenu.x, window.innerWidth - 150) 
+              style={{
+                bottom: '31px',
+                left: Math.min(activeMenu.x, window.innerWidth - 150)
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div 
-                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+              <div
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                 onClick={() => {
                   if (win.minimized) restoreWindow(win.id);
                   else focusWindow(win.id);
@@ -615,8 +615,8 @@ ${isAnon ?
                 {win.minimized ? 'Restaurar' : 'Focar'}
               </div>
 
-              <div 
-                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
+              <div
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                 onClick={() => {
                   if (!win.minimized) minimizeWindow(win.id);
                   else restoreWindow(win.id);
@@ -629,8 +629,8 @@ ${isAnon ?
               {isNotepad && (
                 <>
                   <div className="border-t border-[#aca899] my-[2px] mx-1" />
-                  <div 
-                    className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default text-red-700" 
+                  <div
+                    className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default text-red-700"
                     onClick={() => {
                       if (win.context?.noteId) handleDeleteNote(win.context.noteId);
                       setActiveMenu(null);
@@ -642,9 +642,9 @@ ${isAnon ?
               )}
 
               <div className="border-t border-[#aca899] my-[2px] mx-1" />
-              
-              <div 
-                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold" 
+
+              <div
+                className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold"
                 onClick={() => {
                   closeWindow(win.id);
                   setActiveMenu(null);
@@ -657,7 +657,7 @@ ${isAnon ?
         })()}
 
         {isStartMenuOpen && (
-          <StartMenu 
+          <StartMenu
             loggedUser={loggedUser}
             onClose={() => setIsStartMenuOpen(false)}
             onCreateNote={() => {
@@ -677,8 +677,8 @@ ${isAnon ?
           />
         )}
 
-        <Taskbar 
-          windows={windows} 
+        <Taskbar
+          windows={windows}
           activeWindowId={windows.find(w => w.zIndex === Math.max(...windows.map(win => win.zIndex), 0))?.id}
           onToggleStartMenu={(val) => {
             if (val !== undefined) setIsStartMenuOpen(val);
@@ -688,7 +688,7 @@ ${isAnon ?
             const win = windows.find(w => w.id === id);
             if (win?.minimized) restoreWindow(id);
             else minimizeWindow(id);
-          }} 
+          }}
           onWindowContextMenu={handleWindowContextMenu}
           loggedUser={loggedUser}
           onLogin={handleLogout}

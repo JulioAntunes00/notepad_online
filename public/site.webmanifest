@@ -1,0 +1,26 @@
+{
+  "name": "RetroNote XP",
+  "short_name": "RetroNote",
+  "description": "Bloco de notas online gratuito com visual Windows XP. Acesse suas anotações de qualquer lugar.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#3a6ea5",
+  "theme_color": "#3a6ea5",
+  "orientation": "any",
+  "categories": ["productivity", "utilities"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/notepad-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/notepad-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
