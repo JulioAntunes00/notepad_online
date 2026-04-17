@@ -8,7 +8,8 @@
     "logout": "Log Out",
     "logoutVisitor": "Log Out (Guest)",
     "login": "Log In",
-    "notepad": "Notepad"
+    "notepad": "Notepad",
+    "suggestions": "Suggestions"
   },
   "visitor": {
     "title": "Guest Mode",
@@ -189,5 +190,21 @@
     "close": "Close",
     "helpTitle": "Help and Support",
     "helpText": "Problems with your account or files? Contact our technical team:"
+  },
+  "outlookWindow": {
+    "title": "Suggestions - Outlook Express",
+    "to": "To:",
+    "subject": "Subject:",
+    "subjectPlaceholder": "E.g.: I'd like to have a dark theme",
+    "bodyPlaceholder": "Write your suggestion, idea, or feedback here...\n\nWhat would you like to see on RetroNote XP?",
+    "sendBtn": "Send",
+    "sending": "Sending...",
+    "discard": "Discard",
+    "statusReady": "Ready",
+    "error": "Error",
+    "fillFields": "Please fill in the subject and message before sending.",
+    "sendError": "Could not send your suggestion. Please try again.",
+    "sentSuccess": "Suggestion sent successfully!",
+    "sentSubtext": "Thank you for your feedback. This window will close automatically."
   }
 }
