@@ -263,6 +263,12 @@ export default function LoginWindow({
           Esqueci minha senha
         </button>
       </div>
+
+      <div className="flex justify-center mt-3 pt-2 border-t border-[#dfdfdf]">
+        <p className="text-[10px] text-gray-500 m-0">
+          Precisa de ajuda? Contate o suporte: <a href="mailto:web.ti@live.com" className="text-blue-600 font-bold hover:underline">web.ti@live.com</a>
+        </p>
+      </div>
     </form>
   );
 
