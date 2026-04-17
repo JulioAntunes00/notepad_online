@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Ícone de desktop estilo Windows XP.
@@ -8,6 +9,7 @@ import React, { useState, useRef, useEffect } from 'react';
  * @param {function} onRename - Callback para renomear, recebe novo string (opcional)
  */
 export default function DesktopIcon({ id, type, label, iconSrc, onClick, onRename, onDuplicate, onDelete, onEmptyTrash, menuPos, onContextMenu, onCloseMenu, isLarge = false, onDropItem }) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editLabel, setEditLabel] = useState(label);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -160,12 +162,12 @@ export default function DesktopIcon({ id, type, label, iconSrc, onClick, onRenam
             onCloseMenu?.();
           }}
         >
-          <div className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold" onClick={() => { onClick?.(); onCloseMenu?.(); }}>Abrir</div>
+          <div className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default font-bold" onClick={() => { onClick?.(); onCloseMenu?.(); }}>{t('contextMenu.open')}</div>
           
           {onEmptyTrash && (
             <>
               <div className="border-t border-[#aca899] my-[2px] mx-1" />
-              <div className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" onClick={() => onEmptyTrash()}>Esvaziar Lixeira</div>
+              <div className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" onClick={() => onEmptyTrash()}>{t('contextMenu.emptyTrash')}</div>
             </>
           )}
 
@@ -177,21 +179,21 @@ export default function DesktopIcon({ id, type, label, iconSrc, onClick, onRenam
                 className={`px-5 py-1 text-[11px] cursor-default ${onDuplicate ? 'hover:bg-[#316ac5] hover:text-white' : 'text-gray-400'}`} 
                 onClick={() => { if (onDuplicate) onDuplicate?.(); }}
               >
-                Duplicar
+                {t('contextMenu.duplicate')}
               </div>
               <div 
                 className={`px-5 py-1 text-[11px] cursor-default ${onDelete ? 'hover:bg-[#316ac5] hover:text-white' : 'text-gray-400'}`} 
                 onClick={() => { if (onDelete) onDelete?.(); }}
               >
-                Deletar
+                {t('contextMenu.delete')}
               </div>
               <div 
                 className={`px-5 py-1 text-[11px] cursor-default ${onRename ? 'hover:bg-[#316ac5] hover:text-white' : 'text-gray-400'}`} 
                 onClick={() => { if (onRename) setIsEditing(true); }}
               >
-                Renomear
+                {t('contextMenu.rename')}
               </div>
-              <div className="px-5 py-1 text-[11px] text-gray-400 cursor-default">Compartilhar</div>
+              <div className="px-5 py-1 text-[11px] text-gray-400 cursor-default">{t('contextMenu.share')}</div>
             </>
           )}
         </div>

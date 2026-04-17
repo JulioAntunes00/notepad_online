@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function AboutWindow({ windowData, onClose }) {
+  const { t } = useTranslation();
   const { title, x, y, width, height, zIndex } = windowData;
 
   return (
@@ -29,30 +31,28 @@ export default function AboutWindow({ windowData, onClose }) {
           <h1 className="text-[24px] font-bold mb-4 font-serif text-[#003399]">RetroNote XP</h1>
           
           <p className="mb-4">
-            Uma aplicação web de bloco de notas que emula a interface clássica do Windows XP, 
-            integrando funcionalidades de persistência em nuvem e gerenciamento avançado de janelas.
+            {t('aboutWindow.description')}
           </p>
 
-          <h2 className="text-[16px] font-bold mt-6 mb-2 border-b border-gray-300 pb-1 text-[#003399]">Arquitetura e Tecnologias</h2>
+          <h2 className="text-[16px] font-bold mt-6 mb-2 border-b border-gray-300 pb-1 text-[#003399]">{t('aboutWindow.techTitle')}</h2>
           <ul className="list-disc pl-5 mb-4 space-y-1">
-            <li><strong>Frontend:</strong> React + Vite para um ambiente de desenvolvimento rápido e bundles otimizados.</li>
-            <li><strong>Estilização:</strong> Tailwind CSS + XP.css para a base dos componentes clássicos, garantindo fidelidade visual.</li>
-            <li><strong>Estado e Janelas:</strong> Hook customizado <code>useWindowManager</code> para controle de z-index, minimização e restauração de janelas sem perda de estado do componente (mantendo conteúdo em memória dinamicamente).</li>
-            <li><strong>Persistência Remota:</strong> Supabase (PostgreSQL & Auth) com políticas de Row Level Security (RLS) para proteção de dados por usuário. Ninguém altera ou lê dados alheios.</li>
-            <li><strong>Resiliência Local:</strong> Implementação robusta de <code>localStorage</code> para modo "Visitante" (Anônimo), permitindo uso instantâneo offline-first.</li>
+            <li><strong>Frontend:</strong> {t('aboutWindow.techList.frontend')}</li>
+            <li><strong>{t('notepadWindow.suffix')} (CSS):</strong> {t('aboutWindow.techList.styling')}</li>
+            <li><strong>{t('recycleBinWindow.objects', { count: 2 })} & {t('desktop.notepad')}:</strong> {t('aboutWindow.techList.state')}</li>
+            <li><strong>{t('recycleBinWindow.action')}:</strong> {t('aboutWindow.techList.persistence')}</li>
+            <li><strong>Offline:</strong> {t('aboutWindow.techList.resilience')}</li>
           </ul>
 
-          <h2 className="text-[16px] font-bold mt-6 mb-2 border-b border-gray-300 pb-1 text-[#003399]">Destaques Técnicos</h2>
+          <h2 className="text-[16px] font-bold mt-6 mb-2 border-b border-gray-300 pb-1 text-[#003399]">{t('aboutWindow.highlightsTitle')}</h2>
           <ul className="list-disc pl-5 mb-4 space-y-1">
-            <li><strong>Gerenciador de Janelas Próprio:</strong> Construído do zero sem bibliotecas pesadas de drag-and-drop de terceiros, permitindo controle fino do DOM para a sobreposição de divs em estilo "Desktop".</li>
-            <li><strong>Otimização de Renderização:</strong> Uso de <code>display: none</code> na minimização em vez de desmontagem de componente (unmount) preserva estados complexos do React.</li>
-            <li><strong>Sincronização Segura:</strong> Uso assíncrono controlado ao salvar notas para minimizar requests no backend (Debounce/Interval).</li>
+            <li><strong>{t('recycleBinWindow.title')}:</strong> {t('aboutWindow.highlightsList.manager')}</li>
+            <li><strong>React:</strong> {t('aboutWindow.highlightsList.optimization')}</li>
+            <li><strong>Sync:</strong> {t('aboutWindow.highlightsList.sync')}</li>
           </ul>
 
           <div className="mt-8 p-3 bg-[#ffffe1] border border-[#716f64] text-[11px]">
-            <strong>Nota aos recrutadores e desenvolvedores:</strong><br />
-            Este projeto demonstra capacidade de criar interfaces complexas não-convencionais (Desktop-on-Web), 
-            gerenciamento de estado global avançado e integração segura com BaaS.
+            <strong>{t('aboutWindow.noteRecruiters')}</strong><br />
+            {t('aboutWindow.noteDescription')}
           </div>
         </div>
       </div>

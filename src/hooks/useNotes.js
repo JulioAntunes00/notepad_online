@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -9,6 +10,7 @@ export default function useFileSystem(loggedUser) {
   const [trash, setTrash] = useState([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const loadedForRef = useRef(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // 1. Limpa tudo imediatamente ao trocar de usuário
@@ -80,7 +82,7 @@ export default function useFileSystem(loggedUser) {
   const addNote = useCallback((title, parentId = null) => {
     let finalTitle = title;
     if (!finalTitle || finalTitle.trim() === '') {
-      const baseName = 'Novo bloco de notas';
+      const baseName = t('useNotes.newNoteBase', 'Novo bloco de notas');
       let counter = 1;
       finalTitle = baseName;
 
@@ -107,7 +109,7 @@ export default function useFileSystem(loggedUser) {
   const addFolder = useCallback((name, parentId = null) => {
     let finalTitle = name;
     if (!finalTitle || finalTitle.trim() === '') {
-      const baseName = 'Nova Pasta';
+      const baseName = t('useNotes.newFolderBase', 'Nova Pasta');
       let counter = 1;
       finalTitle = baseName;
 
@@ -372,7 +374,7 @@ export default function useFileSystem(loggedUser) {
 
   const duplicateNote = useCallback(async (oldNote) => {
     const id = crypto.randomUUID();
-    const newTitle = `${oldNote.title} - Cópia`;
+    const newTitle = `${oldNote.title} - ${t('useNotes.copySuffix', 'Cópia')}`;
     const newNote = {
       id,
       user_id: loggedUser === 'Anônimo' ? null : loggedUser.id,

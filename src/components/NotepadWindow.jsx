@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 
 const MIN_WIDTH = 300;
@@ -20,6 +21,7 @@ export default function NotepadWindow({
   onShareNote,
   onShowAlert,
 }) {
+  const { t } = useTranslation();
   const { id, minimized, maximized, zIndex, x, y, width, height } = windowData;
   const [text, setText] = useState(initialContent || '');
   const [menuOpen, setMenuOpen] = useState(null);
@@ -233,7 +235,7 @@ export default function NotepadWindow({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    const cleanTitle = windowData.title.replace(' - Bloco de Notas', '');
+    const cleanTitle = windowData.title.replace(` - ${t('notepadWindow.suffix')}`, '');
     link.download = `${cleanTitle || 'nota'}.${format}`;
     document.body.appendChild(link);
     link.click();
@@ -267,7 +269,7 @@ export default function NotepadWindow({
 
       <div className="title-bar" onMouseDown={handleDragStart} style={{ cursor: maximized ? 'default' : 'move' }}>
         <div className="title-bar-text truncate pr-2">
-          {noteTitle} - Bloco de Notas
+          {noteTitle} - {t('notepadWindow.suffix')}
         </div>
         <div className="title-bar-controls shrink-0">
           <button aria-label="Minimize" onClick={() => onMinimize(id)} />
@@ -284,7 +286,7 @@ export default function NotepadWindow({
               className={`px-2 h-full flex items-center cursor-default ${menuOpen === 'arquivo' ? 'bg-[#316ac5] text-white' : 'hover:bg-[#316ac5] hover:text-white'}`}
               onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === 'arquivo' ? null : 'arquivo'); }}
             >
-              Arquivo
+              {t('notepadWindow.file')}
             </span>
             {menuOpen === 'arquivo' && (
               <div
@@ -295,33 +297,33 @@ export default function NotepadWindow({
                   className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => { setMenuOpen(null); onCreateNote?.(); }}
                 >
-                  Novo
+                  {t('notepadWindow.new')}
                 </div>
                 <div className="border-t border-[#aca899] mx-1 my-[2px]" />
                 <div
                   className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => { setMenuOpen(null); setShowRenameDialog(true); }}
                 >
-                  Renomear
+                  {t('notepadWindow.rename')}
                 </div>
                 <div
                   className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => handleDownloadNote('txt')}
                 >
-                  Salvar como TXT
+                  {t('notepadWindow.saveAsTxt')}
                 </div>
                 <div
                   className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => handleDownloadNote('doc')}
                 >
-                  Salvar para Word
+                  {t('notepadWindow.saveAsWord')}
                 </div>
                 <div className="border-t border-[#aca899] mx-1 my-[2px]" />
                 <div
                   className="px-6 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default"
                   onClick={() => { setMenuOpen(null); onDeleteNote?.(); }}
                 >
-                  Excluir
+                  {t('notepadWindow.delete')}
                 </div>
               </div>
             )}
@@ -331,7 +333,7 @@ export default function NotepadWindow({
             className="px-2 h-full flex items-center hover:bg-[#316ac5] hover:text-white cursor-pointer mr-4"
             onClick={handleShare}
           >
-            Compartilhar
+            {t('notepadWindow.share')}
           </span>
 
           {/* Barra de Ferramentas WordPad (B, I) */}
@@ -377,10 +379,10 @@ export default function NotepadWindow({
             {isSaving ? (
               <>
                 <span>💾</span>
-                <span>Salvando...</span>
+                <span>{t('notepadWindow.saving')}</span>
               </>
             ) : (
-              <span>Salvo autom.</span>
+              <span>{t('notepadWindow.savedAuto')}</span>
             )}
           </p>
           <p className="status-bar-field">UTF-8</p>
@@ -392,14 +394,14 @@ export default function NotepadWindow({
         <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/20">
           <div className="window" style={{ width: 300 }} onClick={e => e.stopPropagation()}>
             <div className="title-bar">
-              <div className="title-bar-text">Renomear Nota</div>
+              <div className="title-bar-text">{t('notepadWindow.renameNote')}</div>
               <div className="title-bar-controls">
                 <button aria-label="Close" onClick={() => setShowRenameDialog(false)} />
               </div>
             </div>
             <div className="window-body">
               <form onSubmit={handleRenameSubmit}>
-                <p className="mb-2 text-[12px]">Novo nome:</p>
+                <p className="mb-2 text-[12px]">{t('notepadWindow.newName')}</p>
                 <input
                   ref={renameInputRef}
                   type="text"
@@ -408,8 +410,8 @@ export default function NotepadWindow({
                   className="w-full mb-4 px-1 border border-[#7f9db9] outline-none"
                 />
                 <section className="field-row" style={{ justifyContent: 'flex-end' }}>
-                  <button type="submit" disabled={!renameValue.trim()}>OK</button>
-                  <button type="button" onClick={() => setShowRenameDialog(false)}>Cancelar</button>
+                  <button type="submit" disabled={!renameValue.trim()}>{t('notepadWindow.ok')}</button>
+                  <button type="button" onClick={() => setShowRenameDialog(false)}>{t('notepadWindow.cancel')}</button>
                 </section>
               </form>
             </div>

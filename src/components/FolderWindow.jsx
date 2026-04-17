@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import DesktopIcon from './DesktopIcon';
 
 const FOLDER_ICON = '/folder-closed.png';
@@ -25,6 +26,7 @@ export default function FolderWindow({
   activeMenu,
   setActiveMenu
 }) {
+  const { t } = useTranslation();
   const { id, title, context, x, y, width, height, zIndex, maximized } = windowData;
   const folderId = context.folderId;
   const [isDragOver, setIsDragOver] = useState(false);
@@ -115,22 +117,22 @@ export default function FolderWindow({
           onClick={handleBack} 
           className="flex items-center gap-1 hover:bg-[#c1d2ee] px-2 py-1 rounded text-black text-[11px] border border-transparent hover:border-[#316ac5]"
         >
-          <img src="/voltar.png" alt="Voltar" className="w-[20px] h-[20px]" />
-          Voltar
+          <img src="/voltar.png" alt={t('folderWindow.back')} className="w-[20px] h-[20px]" />
+          {t('folderWindow.back')}
         </button>
         <div className="w-[1px] h-[22px] bg-[#aca899] mx-1 opacity-50" />
         <button 
           onClick={() => onCreateFolder(folderId)} 
           className="flex items-center gap-1 hover:bg-[#c1d2ee] px-2 py-1 rounded text-black text-[11px] border border-transparent hover:border-[#316ac5]"
         >
-          <img src="/nova-pasta.png" alt="Nova Pasta" className="w-[20px] h-[20px]" />
-          Nova Pasta
+          <img src="/nova-pasta.png" alt={t('folderWindow.newFolder')} className="w-[20px] h-[20px]" />
+          {t('folderWindow.newFolder')}
         </button>
       </div>
 
       {/* Address Bar */}
       <div className="w-full bg-[#ece9d8] border-b border-[#aca899] py-1 px-2 flex items-center gap-2">
-        <span className="text-[11px] text-gray-500">Endereço:</span>
+        <span className="text-[11px] text-gray-500">{t('folderWindow.address')}</span>
         <div className="flex-1 bg-white border border-[#7f9db9] h-[20px] px-1 flex items-center text-[11px] overflow-hidden whitespace-nowrap">
           {title}
         </div>
@@ -189,7 +191,7 @@ export default function FolderWindow({
 
         {subFolders.length === 0 && folderNotes.length === 0 && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[12px] text-gray-400">
-            Esta pasta está vazia.
+            {t('folderWindow.empty')}
           </div>
         )}
 
@@ -208,7 +210,7 @@ export default function FolderWindow({
                 setActiveMenu(null);
               }}
             >
-              Nova Pasta
+              {t('folderWindow.newFolder')}
             </div>
             <div 
               className="px-5 py-1 text-[11px] hover:bg-[#316ac5] hover:text-white cursor-default" 
@@ -217,7 +219,7 @@ export default function FolderWindow({
                 setActiveMenu(null);
               }}
             >
-              Nova Nota
+              {t('folderWindow.newNote')}
             </div>
           </div>
         )}

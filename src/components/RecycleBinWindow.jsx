@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function RecycleBinWindow({
   windowData,
@@ -13,6 +14,7 @@ export default function RecycleBinWindow({
 }) {
   const { id, minimized, maximized, zIndex, x, y, width, height } = windowData;
   const [showConfirm, setShowConfirm] = useState(false);
+  const { t, i18n } = useTranslation();
 
   const handleDragStart = (e) => {
     if (maximized) return;
@@ -65,18 +67,19 @@ export default function RecycleBinWindow({
   const formatDate = (ts) => {
     if (!ts) return '-';
     const d = new Date(ts);
-    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const loc = i18n.language === 'en' ? 'en-US' : i18n.language === 'es' ? 'es-ES' : 'pt-BR';
+    return d.toLocaleDateString(loc) + ' ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
   };
 
   const daysLeft = (ts) => {
-    if (!ts) return '3 dias';
+    if (!ts) return t('recycleBinWindow.daysLeft', { count: 3 });
     const deleteDate = new Date(ts).getTime();
-    if (isNaN(deleteDate)) return '3 dias';
+    if (isNaN(deleteDate)) return t('recycleBinWindow.daysLeft', { count: 3 });
     
     const remaining = 3 - ((Date.now() - deleteDate) / (24 * 60 * 60 * 1000));
-    if (remaining < 0) return 'Expirando...';
-    if (remaining < 1) return 'Menos de 1 dia';
-    return `${Math.ceil(remaining)} dia(s)`;
+    if (remaining < 0) return t('recycleBinWindow.expiring');
+    if (remaining < 1) return t('recycleBinWindow.lessThanDay');
+    return t('recycleBinWindow.daysLeft', { count: Math.ceil(remaining) });
   };
 
   // Só mostra itens "raiz" (iguala ao Windows: pasta deletada aparece sozinha, filhos ficam escondidos)
@@ -90,7 +93,7 @@ export default function RecycleBinWindow({
       ))}
 
       <div className="title-bar" onMouseDown={handleDragStart} style={{ cursor: maximized ? 'default' : 'move' }}>
-        <div className="title-bar-text">Lixeira</div>
+        <div className="title-bar-text">{t('recycleBinWindow.title')}</div>
         <div className="title-bar-controls shrink-0">
           <button aria-label="Minimize" onClick={() => onMinimize(id)} />
           <button aria-label="Maximize" onClick={() => onToggleMaximize(id)} />
@@ -107,23 +110,23 @@ export default function RecycleBinWindow({
             }}
             disabled={trashItems.length === 0}
           >
-            🗑️ Esvaziar Lixeira
+            🗑️ {t('recycleBinWindow.emptyTrash')}
           </button>
           <span className="text-[#808080]">|</span>
-          <span>{visibleItems.length} item(ns)</span>
+          <span>{t('recycleBinWindow.itemsCount', { count: visibleItems.length })}</span>
         </div>
 
         <div className="flex items-center bg-[#ece9d8] border-b border-[#aca899] text-[11px] font-bold select-none px-2 py-[2px]">
-          <span className="flex-1">Nome</span>
-          <span className="w-[130px] text-center">Excluído em</span>
-          <span className="w-[100px] text-center">Expira em</span>
-          <span className="w-[80px] text-center">Ação</span>
+          <span className="flex-1">{t('recycleBinWindow.name')}</span>
+          <span className="w-[130px] text-center">{t('recycleBinWindow.deletedAt')}</span>
+          <span className="w-[100px] text-center">{t('recycleBinWindow.expiresIn')}</span>
+          <span className="w-[80px] text-center">{t('recycleBinWindow.action')}</span>
         </div>
 
         <div className="flex-1 bg-white overflow-y-auto">
           {visibleItems.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[#808080] text-sm">
-              A Lixeira está vazia.
+              {t('recycleBinWindow.empty')}
             </div>
           ) : (
             visibleItems.map(item => (
@@ -136,7 +139,7 @@ export default function RecycleBinWindow({
                     className="text-[11px] px-2 py-0.5"
                     onClick={() => onRestore(item.id)}
                   >
-                    Restaurar
+                    {t('recycleBinWindow.restore')}
                   </button>
                 </span>
               </div>
@@ -145,8 +148,8 @@ export default function RecycleBinWindow({
         </div>
 
         <div className="status-bar !m-0 !py-1">
-          <p className="status-bar-field">{visibleItems.length} objeto(s)</p>
-          <p className="status-bar-field">Exclusão automática: 3 dias</p>
+          <p className="status-bar-field">{t('recycleBinWindow.objects', { count: visibleItems.length })}</p>
+          <p className="status-bar-field">{t('recycleBinWindow.autoDelete')}</p>
         </div>
       </div>
 
@@ -154,7 +157,7 @@ export default function RecycleBinWindow({
         <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/20">
           <div className="window" style={{ width: 320 }} onClick={e => e.stopPropagation()}>
             <div className="title-bar">
-              <div className="title-bar-text">Confirmar exclusão</div>
+              <div className="title-bar-text">{t('recycleBinWindow.confirmTitle')}</div>
               <div className="title-bar-controls">
                 <button aria-label="Close" onClick={() => setShowConfirm(false)} />
               </div>
@@ -163,13 +166,13 @@ export default function RecycleBinWindow({
               <div className="flex gap-3 items-start">
                 <span className="text-3xl">⚠️</span>
                 <p className="text-[12px]">
-                  Tem certeza que deseja esvaziar a Lixeira?<br />
-                  <strong>Esta ação não pode ser desfeita.</strong>
+                  {t('recycleBinWindow.confirmText')}<br />
+                  <strong>{t('recycleBinWindow.confirmWarning')}</strong>
                 </p>
               </div>
               <section className="field-row" style={{ justifyContent: 'flex-end', marginTop: 16 }}>
-                <button onClick={() => { onEmptyTrash(); setShowConfirm(false); }}>Sim</button>
-                <button onClick={() => setShowConfirm(false)}>Não</button>
+                <button onClick={() => { onEmptyTrash(); setShowConfirm(false); }}>{t('recycleBinWindow.yes')}</button>
+                <button onClick={() => setShowConfirm(false)}>{t('recycleBinWindow.no')}</button>
               </section>
             </div>
           </div>

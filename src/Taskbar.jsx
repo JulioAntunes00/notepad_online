@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Barra de tarefas estilo Windows XP Luna.
@@ -15,6 +16,7 @@ export default function Taskbar({
   loggedUser,
   onLogin
 }) {
+  const { t } = useTranslation();
   const [time, setTime] = useState(new Date());
   const [showBalloon, setShowBalloon] = useState(false);
 
@@ -62,7 +64,7 @@ export default function Taskbar({
               marginTop: '-2px'
             }}
           >
-            Iniciar
+            {t('taskbar.start')}
           </span>
         </div>
       </div>
@@ -93,7 +95,7 @@ export default function Taskbar({
           <div 
             className="mr-3 cursor-pointer animate-pulse"
             onClick={onLogin}
-            title="Atenção: Você está navegando como visitante e não há backup em nuvem salvo."
+            title={t('taskbar.trayTooltip')}
           >
             <div className="relative w-[16px] h-[16px] flex items-center justify-center">
               🛡️
@@ -116,7 +118,7 @@ export default function Taskbar({
             
             <div className="flex justify-between items-start mb-1">
               <div className="flex items-center gap-1 font-bold text-[12px] text-[#003399]">
-                <span>🛡️</span> Risco de Segurança
+                <span>🛡️</span> {t('taskbar.securityRisk')}
               </div>
               <button 
                 className="w-4 h-4 bg-transparent border-none text-[#000] font-bold cursor-pointer flex items-center justify-center hover:bg-[#ffe1e1] pb-1"
@@ -127,7 +129,7 @@ export default function Taskbar({
             </div>
             
             <p className="text-[11px] leading-tight m-0 mb-2">
-              Seus dados não estão protegidos. Arquivos criados no modo Visitante podem ser perdidos a qualquer momento.
+              {t('taskbar.securityWarning')}
             </p>
             <p 
               className="text-[11px] text-blue-700 underline cursor-pointer m-0 hover:text-blue-900"
@@ -136,7 +138,7 @@ export default function Taskbar({
                 onLogin();
               }}
             >
-              Clique aqui para sair e criar uma conta.
+              {t('taskbar.clickToCreateAccount')}
             </p>
           </div>
         )}
