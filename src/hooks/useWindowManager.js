@@ -105,8 +105,8 @@ export default function useWindowManager(loggedUser) {
       zIndex: maxZ + 1,
       x: defaultState.x !== undefined ? defaultState.x : 100 + offset,
       y: defaultState.y !== undefined ? defaultState.y : 60 + offset,
-      width: defaultState.width || 600,
-      height: defaultState.height || 400,
+      width: defaultState.width || 720,
+      height: defaultState.height || 480,
     };
     setWindows([...windowsRef.current, newWindow]);
     return id;

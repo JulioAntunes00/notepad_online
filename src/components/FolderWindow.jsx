@@ -88,7 +88,7 @@ export default function FolderWindow({
 
   return (
     <div
-      className="window absolute flex flex-col select-none pointer-events-auto shadow-[2px_2px_10px_rgba(0,0,0,0.3)]"
+      className="window absolute flex flex-col select-none pointer-events-auto"
       style={windowStyle}
       onMouseDown={() => onFocus(id)}
     >
@@ -108,7 +108,8 @@ export default function FolderWindow({
         </div>
       </div>
 
-      {/* Menus e Toolbar */}
+      <div className="window-body flex-1 flex flex-col !m-[3px] overflow-hidden">
+        {/* Menus e Toolbar */}
       <div className="w-full bg-[#ece9d8] border-b border-[#aca899] py-1 px-2 flex items-center gap-1">
         <button 
           onClick={handleBack} 
@@ -135,10 +136,10 @@ export default function FolderWindow({
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div 
-        className={`window-body flex-1 p-2 overflow-auto m-0 bg-white border-t-0 flex flex-wrap content-start gap-4 relative ${isDragOver ? 'bg-blue-50/50' : ''}`}
-        onMouseDown={(e) => e.stopPropagation()}
+        {/* Main Content Area */}
+        <div 
+          className={`flex-1 p-2 overflow-auto bg-white flex flex-wrap content-start gap-4 relative ${isDragOver ? 'bg-blue-50/50' : ''}`}
+          onMouseDown={(e) => e.stopPropagation()}
         onContextMenu={(e) => {
           const target = e.target;
           if (target.closest('[role="button"]')) return;
@@ -220,6 +221,7 @@ export default function FolderWindow({
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

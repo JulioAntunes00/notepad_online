@@ -30,7 +30,7 @@ export default function NewNoteDialog({ isOpen, onClose, onCreate }) {
             <button aria-label="Close" onClick={onClose}></button>
           </div>
         </div>
-        <div className="window-body">
+        <div className="window-body !m-[3px]">
           <form onSubmit={handleSubmit}>
             <p className="mb-2">Nome do Bloco de Notas:</p>
             <input 

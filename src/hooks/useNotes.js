@@ -7,7 +7,7 @@ export default function useFileSystem(loggedUser) {
   const [notes, setNotes] = useState([]);
   const [folders, setFolders] = useState([]);
   const [trash, setTrash] = useState([]);
-  // Esta referência guarda para QUEM estamos exibindo arquivos no momento
+  const [isLoaded, setIsLoaded] = useState(false);
   const loadedForRef = useRef(null);
 
   useEffect(() => {
@@ -15,6 +15,7 @@ export default function useFileSystem(loggedUser) {
     setNotes([]);
     setFolders([]);
     setTrash([]);
+    setIsLoaded(false);
     loadedForRef.current = null;
 
     if (!loggedUser) return;
@@ -32,6 +33,7 @@ export default function useFileSystem(loggedUser) {
             setNotes(savedN ? JSON.parse(savedN) : []);
             setFolders(savedF ? JSON.parse(savedF) : []);
             setTrash(savedT ? JSON.parse(savedT) : []);
+            setIsLoaded(true);
             loadedForRef.current = 'Anônimo';
           }
         } catch { }
@@ -44,20 +46,21 @@ export default function useFileSystem(loggedUser) {
         if (tErr) console.error('[RetroNote] Erro ao carregar lixeira:', tErr.message);
 
         if (isMounted) {
-          if (nData) setNotes(nData);
-          if (fData) setFolders(fData);
-          if (tData) {
-            const now = Date.now();
-            const toKeep = tData.filter(item => {
-              if (!item.deleted_at) return true; // Se não tem data, mantém por segurança
-              const deleteTime = new Date(item.deleted_at).getTime();
-              if (isNaN(deleteTime)) return true; // Se data for inválida, mantém
-              return (now - deleteTime) <= THREE_DAYS_MS;
-            });
-            setTrash(toKeep);
+            setNotes(nData);
+            if (fData) setFolders(fData);
+            if (tData) {
+              const now = Date.now();
+              const toKeep = tData.filter(item => {
+                if (!item.deleted_at) return true; // Se não tem data, mantém por segurança
+                const deleteTime = new Date(item.deleted_at).getTime();
+                if (isNaN(deleteTime)) return true; // Se data for inválida, mantém
+                return (now - deleteTime) <= THREE_DAYS_MS;
+              });
+              setTrash(toKeep);
+            }
+            setIsLoaded(true);
+            loadedForRef.current = currentUser;
           }
-          loadedForRef.current = currentUser;
-        }
       }
     };
 
@@ -435,6 +438,7 @@ export default function useFileSystem(loggedUser) {
     notes,
     folders,
     trash,
+    isLoaded,
     addNote,
     addFolder,
     updateNoteContent,

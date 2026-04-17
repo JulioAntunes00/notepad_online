@@ -22,7 +22,7 @@ export default function XPAlertWindow({ windowData, onClose }) {
         </div>
       </div>
 
-      <div className="window-body flex-1 p-5 flex gap-5 items-start bg-[#ece9d8] overflow-hidden m-0 xp-border">
+      <div className="window-body flex-1 p-5 flex gap-5 items-start bg-[#ece9d8] overflow-hidden !m-[3px]">
         {/* Ícone Estilo Bolha 3D */}
         <div className="flex-shrink-0">
           {isError ? (

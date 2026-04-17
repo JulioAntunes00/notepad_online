@@ -11,9 +11,23 @@ export default function Taskbar({
   onWindowClick, 
   activeWindowId, 
   onToggleStartMenu, 
-  onWindowContextMenu 
+  onWindowContextMenu,
+  loggedUser,
+  onLogin
 }) {
   const [time, setTime] = useState(new Date());
+  const [showBalloon, setShowBalloon] = useState(false);
+
+  const isAnon = loggedUser === 'Anônimo';
+
+  useEffect(() => {
+    if (isAnon) {
+      const t = setTimeout(() => setShowBalloon(true), 2000); 
+      return () => clearTimeout(t);
+    } else {
+      setShowBalloon(false);
+    }
+  }, [isAnon]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -72,11 +86,60 @@ export default function Taskbar({
         ))}
       </div>
 
-      {/* System Tray (Clock) */}
-      <div className="h-full flex items-center px-4 bg-gradient-to-b from-[#0997ff] to-[#0053ee] text-white border-l border-[#08216b] shadow-[inset_1px_0_1px_rgba(255,255,255,0.3)]">
-        <div className="text-[11px] font-sans drop-shadow-[1px_1px_0px_rgba(0,0,0,0.5)]">
+      {/* System Tray (Clock & Icons) */}
+      <div className="h-[30px] flex items-center px-3 bg-gradient-to-b from-[#0997ff] to-[#0053ee] text-white border-l border-[#08216b] shadow-[inset_1px_0_1px_rgba(255,255,255,0.3)] relative">
+        {/* Ícone de Alerta na Bandeja */}
+        {isAnon && (
+          <div 
+            className="mr-3 cursor-pointer animate-pulse"
+            onClick={onLogin}
+            title="Atenção: Você está navegando como visitante e não há backup em nuvem salvo."
+          >
+            <div className="relative w-[16px] h-[16px] flex items-center justify-center">
+              🛡️
+              <span className="absolute -bottom-1 -right-1 text-[10px] drop-shadow-md">❌</span>
+            </div>
+          </div>
+        )}
+
+        <div className="text-[11px] font-sans drop-shadow-[1px_1px_0px_rgba(0,0,0,0.5)] cursor-default">
           {formatTime(time)}
         </div>
+
+        {/* Balloon Tooltip */}
+        {showBalloon && (
+          <div className="absolute bottom-[35px] right-[40px] w-[260px] bg-[#ffffe1] border border-[#000000] rounded-lg p-3 shadow-[2px_2px_5px_rgba(0,0,0,0.3)] text-black font-sans z-[10000]">
+            {/* Setinha apontando para baixo */}
+            <div className="absolute -bottom-[8px] right-[40px] w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent border-t-[#000000]">
+              <div className="absolute -top-[9px] -left-[7px] w-0 h-0 border-l-[7px] border-r-[7px] border-t-[7px] border-l-transparent border-r-transparent border-t-[#ffffe1]"></div>
+            </div>
+            
+            <div className="flex justify-between items-start mb-1">
+              <div className="flex items-center gap-1 font-bold text-[12px] text-[#003399]">
+                <span>🛡️</span> Risco de Segurança
+              </div>
+              <button 
+                className="w-4 h-4 bg-transparent border-none text-[#000] font-bold cursor-pointer flex items-center justify-center hover:bg-[#ffe1e1] pb-1"
+                onClick={() => setShowBalloon(false)}
+              >
+                x
+              </button>
+            </div>
+            
+            <p className="text-[11px] leading-tight m-0 mb-2">
+              Seus dados não estão protegidos. Arquivos criados no modo Visitante podem ser perdidos a qualquer momento.
+            </p>
+            <p 
+              className="text-[11px] text-blue-700 underline cursor-pointer m-0 hover:text-blue-900"
+              onClick={() => {
+                setShowBalloon(false);
+                onLogin();
+              }}
+            >
+              Clique aqui para sair e criar uma conta.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
