@@ -24,7 +24,7 @@ export default function AboutWindow({ windowData, onClose }) {
         </div>
       </div>
 
-      <div className="window-body flex-1 p-0 overflow-y-auto m-0 bg-white border border-[#7f9db9]" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="window-body flex-1 p-0 overflow-y-auto !m-[3px] bg-white border border-[#7f9db9]" onMouseDown={(e) => e.stopPropagation()}>
         <div className="p-5 font-sans text-[12px] text-black leading-relaxed">
           <h1 className="text-[24px] font-bold mb-4 font-serif text-[#003399]">RetroNote XP</h1>
           

@@ -11,12 +11,13 @@ body {
 
 /* Ajustes finos no XP.css */
 .window .title-bar {
-  /* Aumentando consideravelmente o padding vertical para a barra ficar mais espessa */
+  /* Barra um pouco mais gorda para o texto ficar agradável */
   padding: 8px 3px 12px 3px !important;
   min-height: 32px !important;
 }
 
-/* Mantendo os componentes internos originais como pedido */
+/* Reduzir o padding da title-bar quando não for janela principal se necessário, mas o padrão XP serve bem */
+
 .title-bar-text {
   padding-left: 2px;
 }
@@ -25,9 +26,17 @@ body {
   /* Tamanho padrão do xp.css mantido */
 }
 
-/* Bordas azuis personalizadas para janelas de alerta (Fidelidade XP) */
-.xp-border {
-  border-left: 3px solid #0058e4 !important;
-  border-right: 3px solid #0058e4 !important;
-  border-bottom: 1px solid #0058e4 !important;
+/* Animação suave de troca de view no login */
+.view-transition {
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

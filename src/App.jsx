@@ -11,6 +11,7 @@ import XPAlertWindow from './components/XPAlertWindow';
 import StartMenu from './components/StartMenu';
 import AboutWindow from './components/AboutWindow';
 import FolderWindow from './components/FolderWindow';
+import ProfileWindow from './components/ProfileWindow';
 
 const FOLDER_ICON = '/folder-closed.png';
 const NOTEPAD_ICON = '/Notepad.png';
@@ -18,6 +19,7 @@ const HELP_ICON = '/Help and Support.png';
 const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
 const USER_ICON = '/Power.png';
+const PROFILE_ICON = '/Help and Support.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
@@ -209,7 +211,7 @@ function App() {
       {loggedUser === 'Anônimo' && (
         <div className="w-full bg-[#ffffe1] border-b border-[#716f64] px-3 py-1 flex items-center gap-1 cursor-pointer hover:bg-[#fff9b3] z-50 shadow-md flex-shrink-0" onClick={() => {
           const vw = window.innerWidth;
-          openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+          openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
         }}>
           <span className="text-[11px] font-bold text-black">Aviso:</span>
           <span className="text-[11px] text-gray-800">Você está navegando como Visitante. Seus dados estão apenas neste dispositivo. Clique aqui para criar uma conta ou fazer login para sincronizar em qualquer lugar.</span>
@@ -314,12 +316,32 @@ function App() {
                 setLoggedUser(null);
               } else {
                 const vw = window.innerWidth;
-                openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+                openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
               }
             }}
             menuPos={activeMenu?.id === 'auth' ? activeMenu : null}
             onContextMenu={(pos) => setActiveMenu({ id: 'auth', ...pos })}
           />
+
+          {loggedUser && loggedUser !== 'Anônimo' && (
+            <DesktopIcon
+              label="Meu Perfil"
+              iconSrc={PROFILE_ICON}
+              onClick={() => {
+                const existing = windows.find(w => w.type === 'profile');
+                if (existing) {
+                  focusWindow(existing.id);
+                  restoreWindow(existing.id);
+                } else {
+                  const vw = window.innerWidth;
+                  const vh = window.innerHeight;
+                  openWindow('profile', 'Meu Perfil', { type: 'profile' }, { x: vw / 2 - 200, y: vh / 2 - 220, width: 400, height: 440 });
+                }
+              }}
+              menuPos={activeMenu?.id === 'profile' ? activeMenu : null}
+              onContextMenu={(pos) => setActiveMenu({ id: 'profile', ...pos })}
+            />
+          )}
         </div>
 
         {/* Camada de Janelas */}
@@ -421,6 +443,20 @@ function App() {
           if (win.type === 'about') {
             return (
               <AboutWindow key={win.id} windowData={win} onClose={closeWindow} />
+            );
+          }
+
+          if (win.type === 'profile' && loggedUser && loggedUser !== 'Anônimo') {
+            return (
+              <ProfileWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                loggedUser={loggedUser}
+                onShowAlert={handleShowAlert}
+              />
             );
           }
           
@@ -536,7 +572,7 @@ function App() {
                 if (loginWin) focusWindow(loginWin.id);
                 else {
                   const vw = window.innerWidth;
-                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
                 }
               }
             }}
@@ -556,7 +592,7 @@ function App() {
             }}
             onLogin={() => {
               const vw = window.innerWidth;
-              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 170, y: 60, width: 340, height: 250 });
+              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
             }}
           />
         )}

@@ -84,7 +84,7 @@ export default function RecycleBinWindow({
   const visibleItems = trashItems.filter(item => !item.folder_id || !trashIds.has(item.folder_id));
 
   return (
-    <div className="window absolute flex flex-col shadow-[2px_2px_15px_rgba(0,0,0,0.5)]" style={windowStyle} onMouseDown={() => onFocus(id)}>
+    <div className="window absolute flex flex-col" style={windowStyle} onMouseDown={() => onFocus(id)}>
       {!maximized && resizeHandles.map(h => (
         <div key={h.dir} className={h.cls} onMouseDown={(e) => handleResizeStart(e, h.dir)} />
       ))}
@@ -159,7 +159,7 @@ export default function RecycleBinWindow({
                 <button aria-label="Close" onClick={() => setShowConfirm(false)} />
               </div>
             </div>
-            <div className="window-body">
+            <div className="window-body !m-[3px]">
               <div className="flex gap-3 items-start">
                 <span className="text-3xl">⚠️</span>
                 <p className="text-[12px]">
