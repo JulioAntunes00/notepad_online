@@ -1,0 +1,25 @@
+# https://www.robotstxt.org/
+# RetroNote XP — ready4office.com
+
+User-agent: *
+Allow: /
+Disallow: /assets/
+
+# Sitemap
+Sitemap: https://www.ready4office.com/sitemap.xml
+
+# Crawl-delay sugerido (para bots educados)
+Crawl-delay: 1
+
+# Google
+User-agent: Googlebot
+Allow: /
+
+# Bing
+User-agent: Bingbot
+Allow: /
+
+# Google Images
+User-agent: Googlebot-Image
+Allow: /og-preview.png
+Allow: /notepad-icon.png

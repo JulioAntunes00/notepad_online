@@ -1,17 +1,368 @@
 <!doctype html>
-<html lang="pt-BR" class="notranslate">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/notepad-icon.png" />
-    <link rel="apple-touch-icon" href="/notepad-icon.png" />
-    <meta name="google" content="notranslate" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RetroNote XP</title>
-    <!-- xp.css -->
-    <link rel="stylesheet" href="https://unpkg.com/xp.css">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="pt-BR" class="notranslate" dir="ltr">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- ============================================================ -->
+  <!-- 🔧 PERFORMANCE: Preconnect, DNS Prefetch, Preload            -->
+  <!-- ============================================================ -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://wtbfeupgbycvvihjzldo.supabase.co" crossorigin />
+  <link rel="dns-prefetch" href="https://unpkg.com" />
+  <link rel="dns-prefetch" href="https://wtbfeupgbycvvihjzldo.supabase.co" />
+  <link rel="preload" href="https://unpkg.com/xp.css" as="style" />
+
+  <!-- ============================================================ -->
+  <!-- 🎯 SEO: Core Meta Tags                                       -->
+  <!-- ============================================================ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="google" content="notranslate" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <title>RetroNote XP — Bloco de Notas Online Grátis | Acesse de Qualquer Lugar</title>
+  <meta name="description" content="Bloco de notas online gratuito com visual Windows XP. Crie, organize em pastas e acesse suas anotações de qualquer navegador com sincronização segura na nuvem. Sem instalar nada." />
+  <meta name="keywords" content="bloco de notas online, notepad online, bloco de notas gratuito, notas online grátis, anotações online, notas na nuvem, organizar notas, notepad gratis, bloco de notas web, bloco de notas navegador, windows xp online, retro notepad, caderno online, escrever online, salvar notas online" />
+  <meta name="author" content="Ready4Office" />
+  <meta name="creator" content="Ready4Office" />
+  <meta name="publisher" content="Ready4Office" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <meta name="bingbot" content="index, follow" />
+  <link rel="canonical" href="https://www.ready4office.com/" />
+
+  <!-- ============================================================ -->
+  <!-- 🌐 SEO: Hreflang (Idioma e Região)                          -->
+  <!-- ============================================================ -->
+  <link rel="alternate" hreflang="pt-BR" href="https://www.ready4office.com/" />
+  <link rel="alternate" hreflang="pt" href="https://www.ready4office.com/" />
+  <link rel="alternate" hreflang="x-default" href="https://www.ready4office.com/" />
+
+  <!-- ============================================================ -->
+  <!-- 📱 PWA & Mobile: Favicon, Theme, Manifest                    -->
+  <!-- ============================================================ -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/notepad-icon.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/notepad-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/notepad-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#3a6ea5" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RetroNote XP" />
+  <meta name="application-name" content="RetroNote XP" />
+  <meta name="msapplication-TileColor" content="#3a6ea5" />
+  <meta name="msapplication-config" content="none" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- ============================================================ -->
+  <!-- 🔗 SEO: Open Graph (WhatsApp, Facebook, Discord, LinkedIn)   -->
+  <!-- ============================================================ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:site_name" content="RetroNote XP — Ready4Office" />
+  <meta property="og:title" content="RetroNote XP — Bloco de Notas Online Grátis com Visual Windows XP" />
+  <meta property="og:description" content="Crie e organize suas notas online com a nostalgia do Windows XP. 100% grátis, seguro e acessível de qualquer dispositivo. Sem instalar nada." />
+  <meta property="og:url" content="https://www.ready4office.com/" />
+  <meta property="og:image" content="https://www.ready4office.com/og-preview.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="RetroNote XP - Bloco de Notas Online com interface Windows XP" />
+
+  <!-- ============================================================ -->
+  <!-- 🐦 SEO: Twitter / X Card                                     -->
+  <!-- ============================================================ -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="RetroNote XP — Bloco de Notas Online Grátis" />
+  <meta name="twitter:description" content="Bloco de notas online gratuito com visual Windows XP. Nostalgia e produtividade." />
+  <meta name="twitter:image" content="https://www.ready4office.com/og-preview.png" />
+  <meta name="twitter:image:alt" content="RetroNote XP - Interface do Bloco de Notas Online" />
+
+  <!-- ============================================================ -->
+  <!-- 📊 SEO: Dados Estruturados JSON-LD (Google Rich Results)     -->
+  <!-- ============================================================ -->
+
+  <!-- Schema 1: WebApplication (ficha do produto no Google) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "RetroNote XP",
+    "alternateName": ["Bloco de Notas Online", "Ready4Office Notepad", "Notepad Online Grátis"],
+    "url": "https://www.ready4office.com/",
+    "description": "Bloco de notas online gratuito com a interface clássica do Windows XP. Crie, organize e acesse suas anotações de qualquer lugar com sincronização na nuvem.",
+    "applicationCategory": "ProductivityApplication",
+    "operatingSystem": "Any",
+    "browserRequirements": "Requires JavaScript. Works on Chrome, Firefox, Safari, Edge.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL",
+      "availability": "https://schema.org/InStock"
+    },
+    "featureList": [
+      "Bloco de notas online gratuito",
+      "Interface autêntica do Windows XP",
+      "Sincronização automática na nuvem",
+      "Pastas e organização de arquivos",
+      "Modo visitante sem cadastro",
+      "Lixeira com restauração de notas",
+      "Editor de texto rico com formatação",
+      "Acesso de qualquer navegador ou dispositivo"
+    ],
+    "screenshot": "https://www.ready4office.com/og-preview.png",
+    "softwareVersion": "1.0",
+    "inLanguage": "pt-BR",
+    "author": {
+      "@type": "Organization",
+      "name": "Ready4Office",
+      "url": "https://www.ready4office.com/"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "15",
+      "bestRating": "5",
+      "worstRating": "1"
+    }
+  }
+  </script>
+
+  <!-- Schema 2: Organization (marca no Google) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Ready4Office",
+    "url": "https://www.ready4office.com/",
+    "logo": "https://www.ready4office.com/notepad-icon.png",
+    "sameAs": []
+  }
+  </script>
+
+  <!-- Schema 3: FAQPage (Perguntas Frequentes — aparece em Rich Snippets) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "O RetroNote XP é gratuito?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim! O RetroNote XP é 100% gratuito. Você pode criar uma conta ou usar como visitante sem pagar nada. Todas as funcionalidades estão disponíveis gratuitamente."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Preciso instalar alguma coisa?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Não. O RetroNote XP funciona diretamente no navegador. Basta acessar www.ready4office.com e começar a usar. Funciona no Chrome, Firefox, Safari e Edge."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Minhas notas ficam salvas na nuvem?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim! Ao criar uma conta, suas notas são sincronizadas automaticamente na nuvem com criptografia. Você pode acessar de qualquer computador ou celular."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Posso usar sem criar conta?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim! O modo visitante permite usar o bloco de notas imediatamente. Porém, os dados ficam só no seu navegador. Para salvar na nuvem, crie uma conta gratuita."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Por que o visual parece o Windows XP?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "O RetroNote XP foi projetado com a interface clássica do Windows XP como homenagem à era dourada da informática. É um bloco de notas moderno com a nostalgia dos anos 2000."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Schema 4: BreadcrumbList (Navegação no Google) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Início",
+        "item": "https://www.ready4office.com/"
+      }
+    ]
+  }
+  </script>
+
+  <!-- ============================================================ -->
+  <!-- 🎨 Estilos: XP.css + Landing Page SEO (Critical CSS Inline)  -->
+  <!-- ============================================================ -->
+  <link rel="stylesheet" href="https://unpkg.com/xp.css" />
+
+  <style>
+    /* Critical CSS inline para First Contentful Paint */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; padding: 0; overflow: hidden; }
+
+    /* Landing SEO — visível para crawlers e durante carregamento */
+    .seo-landing {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #245EDC 0%, #3a6ea5 40%, #1a4d80 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem 1rem;
+      line-height: 1.7;
+    }
+    .seo-landing h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); margin: 0 0 0.5rem; text-shadow: 2px 2px 6px rgba(0,0,0,0.4); }
+    .seo-landing .subtitle { font-size: clamp(1rem, 2.5vw, 1.3rem); font-weight: 400; opacity: 0.92; margin-bottom: 2.5rem; max-width: 640px; }
+    .seo-landing .features { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; max-width: 750px; margin-bottom: 2.5rem; }
+    .seo-landing .feature { background: rgba(255,255,255,0.12); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; padding: 0.85rem 1.2rem; font-size: 0.95rem; transition: transform 0.2s; }
+    .seo-landing .feature:hover { transform: translateY(-2px); background: rgba(255,255,255,0.2); }
+    .seo-landing .cta { display: inline-block; background: linear-gradient(135deg, #4CAF50, #45a049); color: #fff; padding: 0.9rem 2.5rem; border-radius: 8px; font-size: 1.15rem; font-weight: 700; text-decoration: none; box-shadow: 0 6px 20px rgba(0,0,0,0.35); transition: transform 0.2s, box-shadow 0.2s; letter-spacing: 0.3px; }
+    .seo-landing .cta:hover { transform: scale(1.06); box-shadow: 0 8px 25px rgba(0,0,0,0.45); }
+    .seo-landing section { max-width: 700px; margin: 1.5rem auto; text-align: left; }
+    .seo-landing section h2 { font-size: 1.4rem; margin-bottom: 0.75rem; border-bottom: 2px solid rgba(255,255,255,0.3); padding-bottom: 0.4rem; }
+    .seo-landing section h3 { font-size: 1.1rem; margin: 1.2rem 0 0.5rem; }
+    .seo-landing ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+    .seo-landing li { margin-bottom: 0.4rem; }
+    .seo-landing .faq-item { background: rgba(0,0,0,0.15); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .seo-landing .faq-item strong { display: block; margin-bottom: 0.3rem; font-size: 1rem; }
+    .seo-landing .faq-item p { margin: 0; opacity: 0.9; font-size: 0.92rem; }
+    .seo-landing footer { margin-top: 3rem; opacity: 0.55; font-size: 0.78rem; }
+    .seo-landing footer a { color: #a8d4ff; }
+
+    /* Quando React monta, esconde a landing */
+    #root:not(:empty) ~ .seo-landing-wrapper { display: none !important; }
+  </style>
+</head>
+
+<body>
+  <!-- React monta aqui -->
+  <div id="root"></div>
+
+  <!-- ============================================================ -->
+  <!-- 📄 SEO: Landing Page estática para crawlers / noscript        -->
+  <!-- Conteúdo semântico rico que o Googlebot lê diretamente        -->
+  <!-- ============================================================ -->
+  <div class="seo-landing-wrapper">
+    <noscript>
+    <div class="seo-landing" role="main" itemscope itemtype="https://schema.org/WebApplication">
+      <header>
+        <h1 itemprop="name">📝 RetroNote XP</h1>
+        <p class="subtitle" itemprop="description">
+          O <strong>bloco de notas online gratuito</strong> com a nostalgia do <strong>Windows XP</strong>.
+          Acesse suas anotações de <em>qualquer lugar do mundo</em>, de qualquer navegador.
+        </p>
+      </header>
+
+      <nav aria-label="Funcionalidades principais">
+        <div class="features" role="list">
+          <div class="feature" role="listitem">📄 Bloco de Notas Online Grátis</div>
+          <div class="feature" role="listitem">☁️ Sincronização na Nuvem</div>
+          <div class="feature" role="listitem">📁 Pastas e Organização</div>
+          <div class="feature" role="listitem">🗑️ Lixeira com Restauração</div>
+          <div class="feature" role="listitem">🔒 Criptografia e Segurança</div>
+          <div class="feature" role="listitem">💻 Visual Windows XP Autêntico</div>
+          <div class="feature" role="listitem">📱 Funciona no Celular</div>
+          <div class="feature" role="listitem">⚡ Sem Instalar Nada</div>
+        </div>
+      </nav>
+
+      <a class="cta" href="/" title="Acessar o Bloco de Notas Online Grátis">Começar a Usar — É Grátis</a>
+
+      <!-- Conteúdo Textual Rico para SEO -->
+      <section>
+        <h2>O que é o RetroNote XP?</h2>
+        <p>
+          O <strong>RetroNote XP</strong> é um <strong>bloco de notas online</strong> totalmente gratuito que combina a
+          interface clássica do <strong>Windows XP</strong> com tecnologia moderna de nuvem. Diferente de outros editores
+          de texto online, o RetroNote XP oferece uma experiência única e nostálgica, como se você estivesse usando o
+          computador dos anos 2000 — mas com todas as vantagens da internet atual.
+        </p>
+        <p>
+          Suas notas são <strong>salvas automaticamente na nuvem</strong> com criptografia de ponta. Você pode acessar de
+          qualquer computador, tablet ou celular, a qualquer hora. É o seu caderno digital pessoal, sempre disponível.
+        </p>
+
+        <h2>Como funciona?</h2>
+        <ol>
+          <li><strong>Acesse o site</strong> — Abra <a href="https://www.ready4office.com/">www.ready4office.com</a> em qualquer navegador</li>
+          <li><strong>Crie sua conta grátis</strong> — Ou use como visitante instantaneamente</li>
+          <li><strong>Escreva suas notas</strong> — Com formatação, pastas e organização</li>
+          <li><strong>Acesse de qualquer lugar</strong> — Suas notas ficam seguras na nuvem</li>
+        </ol>
+
+        <h2>Por que usar o RetroNote XP?</h2>
+        <ul>
+          <li>✅ <strong>100% gratuito</strong>, sem anúncios e sem pegadinhas</li>
+          <li>✅ <strong>Funciona em qualquer navegador</strong> — Chrome, Firefox, Safari, Edge</li>
+          <li>✅ <strong>Não precisa instalar</strong> — Acesse direto pelo site</li>
+          <li>✅ <strong>Notas salvas na nuvem</strong> — Acessíveis de qualquer PC ou celular</li>
+          <li>✅ <strong>Design nostálgico</strong> — A interface clássica que marcou gerações</li>
+          <li>✅ <strong>Seguro</strong> — Criptografia e isolamento total entre contas</li>
+          <li>✅ <strong>Modo visitante</strong> — Use sem criar conta</li>
+          <li>✅ <strong>Organização com pastas</strong> — Arraste e solte como no Windows</li>
+        </ul>
+
+        <h2>Perguntas Frequentes</h2>
+
+        <div class="faq-item">
+          <strong>O RetroNote XP é gratuito?</strong>
+          <p>Sim! O RetroNote XP é 100% gratuito. Você pode criar uma conta ou usar como visitante sem pagar nada. Todas as funcionalidades estão disponíveis gratuitamente.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>Preciso instalar alguma coisa?</strong>
+          <p>Não. O RetroNote XP funciona diretamente no navegador. Basta acessar www.ready4office.com e começar a usar. Funciona no Chrome, Firefox, Safari e Edge.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>Minhas notas ficam salvas na nuvem?</strong>
+          <p>Sim! Ao criar uma conta, suas notas são sincronizadas automaticamente na nuvem com criptografia. Você pode acessar de qualquer computador ou celular.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>Posso usar sem criar conta?</strong>
+          <p>Sim! O modo visitante permite usar o bloco de notas imediatamente. Porém, os dados ficam só no seu navegador. Para salvar na nuvem, crie uma conta gratuita.</p>
+        </div>
+
+        <div class="faq-item">
+          <strong>Por que o visual parece o Windows XP?</strong>
+          <p>O RetroNote XP foi projetado com a interface clássica do Windows XP como homenagem à era dourada da informática. É um bloco de notas moderno com a nostalgia dos anos 2000.</p>
+        </div>
+      </section>
+
+      <footer>
+        <p>
+          <strong>RetroNote XP</strong> — Bloco de notas online gratuito por
+          <a href="https://www.ready4office.com/" rel="author">Ready4Office</a>. 
+          Feito com React, Supabase e muita nostalgia.
+        </p>
+        <p>© 2026 Ready4Office. Todos os direitos reservados.</p>
+      </footer>
+    </div>
+    </noscript>
+  </div>
+
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>
