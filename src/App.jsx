@@ -26,7 +26,7 @@ function App() {
   const [authChecked, setAuthChecked] = useState(false);
 
   const {
-    notes, folders, trash,
+    notes, folders, trash, isLoaded,
     addNote, addFolder, updateNoteContent, updateNoteTitle, updateFolderTitle, shareNote,
     deleteNote, deleteFolder, restoreNote, permanentDelete, emptyTrash, migrateToCloud, duplicateNote, moveNote, moveFolder
   } = useNotes(loggedUser);
@@ -63,7 +63,8 @@ function App() {
       if (session?.user) {
         setLoggedUser(session.user);
       } else {
-        setLoggedUser('Anônimo');
+        setLoggedUser(null);
+        handleOpenLogin();
       }
       setAuthChecked(true);
     };
@@ -71,52 +72,102 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) setLoggedUser(session.user);
-      else setLoggedUser('Anônimo');
+      else {
+        setLoggedUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Verifica se é o primeiro acesso para auto-abrir a nota de boas vindas
+  // Verifica se é o primeiro acesso para criar estrutura padrão e auto-abrir nota
   useEffect(() => {
-    if (authChecked && loggedUser === 'Anônimo') {
-      const hasSeenWelcome = localStorage.getItem('retronote_seen_welcome');
-      if (!hasSeenWelcome) {
-        localStorage.setItem('retronote_seen_welcome', 'true');
-        const welcomeTitle = 'Bem Vindo!';
-        const newNote = addNote(welcomeTitle);
-        if (newNote) {
-          const welcomeContent = `<div><b>Bem-vindo ao RetroNote XP! 🌠</b></div>
+    if (!authChecked || !isLoaded || !loggedUser) return;
+
+    const userKey = loggedUser === 'Anônimo' ? 'visitor' : loggedUser.id;
+    const storageKey = `retronote_onboarding_${userKey}`;
+    const hasSeenOnboarding = localStorage.getItem(storageKey);
+
+    // Se o usuário não tiver nada e nunca viu o onboarding, cria a estrutura inicial
+    if (!hasSeenOnboarding && notes.length === 0 && folders.length === 0) {
+      localStorage.setItem(storageKey, 'true');
+      
+      // 1. Cria a pasta "Meus Documentos"
+      const defaultFolder = addFolder('Meus Documentos');
+      
+      // 2. Cria a nota de boas-vindas na Área de Trabalho (raiz)
+      const welcomeTitle = 'Explicação de Início';
+      const newNote = addNote(welcomeTitle, null);
+      
+      if (newNote) {
+        const isAnon = loggedUser === 'Anônimo';
+        const welcomeContent = `<div><span style="font-size: 18px;"><b>Bem-vindo ao RetroNote XP! 🌠</b></span></div>
 <br>
-<div>Suas anotações agora têm o visual clássico que amamos.</div>
+<div>Este é o seu novo espaço para organizar ideias com a nostalgia dos anos 2000.</div>
 <br>
-<div><b>⚠️ Cuidado:</b> Sem login, seus dados ficam apenas no navegador. Se limpar os dados ou formatar o PC, as notas <b>SUMIRÃO</b>.</div>
+<div><b>O que acabou de acontecer?</b></div>
+<div>• Criamos automaticamente uma pasta chamada <b>"Meus Documentos"</b>.</div>
+<div>• Criamos este <b>Bloco de Notas</b> diretamente na sua Área de Trabalho para facilitar seu início.</div>
 <br>
-<div><b>💡 Por que criar conta?</b></div>
-<div>Para salvar tudo na nuvem e nunca mais perder nada! Acesse de qualquer lugar e fique seguro.</div>
+<div><b>Dicas Rápidas:</b></div>
+<div>• <b>Salvamento:</b> Tudo o que você digita aqui é salvo automaticamente.</div>
+<div>• <b>Organização:</b> Você pode arrastar este arquivo para dentro da pasta "Meus Documentos" se desejar.</div>
+<div>• <b>Botão Direito:</b> Clique com o botão direito nos ícones para renomear, deletar ou criar novos itens.</div>
 <br>
-<div><b>Dica:</b> Tente clicar com o botão direito nos ícones! 🖱️</div>
+${isAnon ? 
+  '<div><b>⚠️ Aviso Importante:</b> Como Visitante, seus dados residem <u>apenas neste navegador</u>. Se você limpar o cache ou trocar de PC, perderá suas notas.</div><br><div><b>💡 Dica:</b> Crie uma conta para sincronizar tudo na nuvem com segurança!</div>' : 
+  '<div><b>✅ Sincronização Ativa:</b> Suas notas estão seguras na nuvem e podem ser acessadas de qualquer lugar!</div>'}
 <br>
-<div>— Equipe RetroNote XP 🚀</div>`;
-          updateNoteContent(newNote.id, welcomeContent);
-          const vw = window.innerWidth;
-          const vh = window.innerHeight;
-          openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, { x: Math.max(0, vw / 2 - 500), y: Math.max(0, vh / 2 - 300), width: 1000, height: 600 });
-        }
+<div>Aproveite a experiência! 🚀</div>`;
+
+        updateNoteContent(newNote.id, welcomeContent);
+        
+        // 3. Abre a janela da nota com uma posição centralizada
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        
+        // Pequeno delay para garantir que o estado local dos ícones foi atualizado
+        setTimeout(() => {
+          openWindow('notepad', `${welcomeTitle} - Bloco de Notas`, { noteId: newNote.id }, { 
+            x: Math.max(0, vw / 2 - 360), 
+            y: Math.max(0, vh / 2 - 270), 
+            width: 720, 
+            height: 540 
+          });
+        }, 100);
       }
     }
-  }, [authChecked, loggedUser, addNote, openWindow, updateNoteContent]);
+  }, [authChecked, isLoaded, loggedUser, notes.length, folders.length, addNote, addFolder, updateNoteContent, openWindow]);
 
   // Modo Visitante/Leitura removido.
+
+  const handleOpenLogin = () => {
+    const existing = windows.find(w => w.type === 'login');
+    if (existing) {
+      focusWindow(existing.id);
+      restoreWindow(existing.id);
+    } else {
+      const vw = window.innerWidth;
+      openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 240, y: 60, width: 480, height: 384 });
+    }
+  };
+
+  const handleLogout = async () => {
+    sessionStorage.removeItem('retronote_is_anon');
+    sessionStorage.removeItem('retronote_seen_visitor_balloon');
+    if (loggedUser && loggedUser !== 'Anônimo') await supabase.auth.signOut();
+    setLoggedUser(null);
+    handleOpenLogin();
+  };
 
   const handleShowAlert = (title, message, type = 'info') => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     openWindow('alert', title, { message, type }, {
-      x: vw / 2 - 175,
-      y: vh / 2 - 75,
-      width: 350,
-      height: 150
+      x: vw / 2 - 210,
+      y: vh / 2 - 90,
+      width: 420,
+      height: 180
     });
   };
 
@@ -208,15 +259,7 @@ function App() {
       className="w-screen h-screen bg-[#3a6ea5] overflow-hidden relative select-none flex flex-col"
       onClick={() => isStartMenuOpen && setIsStartMenuOpen(false)}
     >
-      {loggedUser === 'Anônimo' && (
-        <div className="w-full bg-[#ffffe1] border-b border-[#716f64] px-3 py-1 flex items-center gap-1 cursor-pointer hover:bg-[#fff9b3] z-50 shadow-md flex-shrink-0" onClick={() => {
-          const vw = window.innerWidth;
-          openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
-        }}>
-          <span className="text-[11px] font-bold text-black">Aviso:</span>
-          <span className="text-[11px] text-gray-800">Você está navegando como Visitante. Seus dados estão apenas neste dispositivo. Clique aqui para criar uma conta ou fazer login para sincronizar em qualquer lugar.</span>
-        </div>
-      )}
+
 
       {/* Container Principal que ocupa o resto do espaço */}
       <div 
@@ -226,6 +269,26 @@ function App() {
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
         onDrop={handleDropToDesktop}
       >
+        
+        {/* Marca d'Água de Modo Visitante */}
+        {loggedUser === 'Anônimo' && (
+          <div 
+            className="absolute bottom-12 right-6 flex flex-col items-end text-white text-right pointer-events-none opacity-80 z-50"
+            style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
+          >
+            <span className="text-xl font-bold font-sans">Modo Visitante</span>
+            <span className="text-sm">Seus dados serão perdidos ao limpar o navegador.</span>
+            <span 
+              className="text-xs mt-1 text-[#ffffcc] underline cursor-pointer pointer-events-auto hover:text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLogout();
+              }}
+            >
+              Clique aqui para sair e criar uma conta
+            </span>
+          </div>
+        )}
 
         {/* Ícones da Área de Trabalho sempre visíveis */}
         <div className="absolute top-4 left-4 flex flex-col gap-2 flex-wrap max-h-[calc(100vh-40px)] pointer-events-none">
@@ -299,7 +362,7 @@ function App() {
               } else {
                 const vw = window.innerWidth;
                 const vh = window.innerHeight;
-                openWindow('about', 'Sobre o Site', { type: 'about' }, { x: vw / 2 - 250, y: vh / 2 - 200, width: 500, height: 400 });
+                openWindow('about', 'Sobre o Site', { type: 'about' }, { x: vw / 2 - 300, y: vh / 2 - 240, width: 600, height: 480 });
               }
             }}
             menuPos={activeMenu?.id === 'about' ? activeMenu : null}
@@ -309,16 +372,7 @@ function App() {
           <DesktopIcon
             label={loggedUser ? (loggedUser === 'Anônimo' ? 'Sair (Visitante)' : 'Sair') : "Login"}
             iconSrc={USER_ICON}
-            onClick={async () => {
-              if (loggedUser) {
-                sessionStorage.removeItem('retronote_is_anon');
-                if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
-                setLoggedUser(null);
-              } else {
-                const vw = window.innerWidth;
-                openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
-              }
-            }}
+            onClick={handleLogout}
             menuPos={activeMenu?.id === 'auth' ? activeMenu : null}
             onContextMenu={(pos) => setActiveMenu({ id: 'auth', ...pos })}
           />
@@ -335,7 +389,7 @@ function App() {
                 } else {
                   const vw = window.innerWidth;
                   const vh = window.innerHeight;
-                  openWindow('profile', 'Meu Perfil', { type: 'profile' }, { x: vw / 2 - 200, y: vh / 2 - 220, width: 400, height: 440 });
+                  openWindow('profile', 'Meu Perfil', { type: 'profile' }, { x: vw / 2 - 240, y: vh / 2 - 264, width: 480, height: 528 });
                 }
               }}
               menuPos={activeMenu?.id === 'profile' ? activeMenu : null}
@@ -568,32 +622,17 @@ function App() {
             onCreateNote={() => {
               if (loggedUser) handleCreateNote();
               else {
-                const loginWin = windows.find(w => w.type === 'login');
-                if (loginWin) focusWindow(loginWin.id);
-                else {
-                  const vw = window.innerWidth;
-                  openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
-                }
+                handleOpenLogin();
               }
             }}
             onOpenRecycleBin={() => {
               if (loggedUser) openWindow('recyclebin', 'Lixeira', { type: 'recyclebin' });
               else {
-                const loginWin = windows.find(w => w.type === 'login');
-                if (loginWin) focusWindow(loginWin.id);
+                handleOpenLogin();
               }
             }}
-            onLogout={async () => {
-              if (loggedUser) {
-                sessionStorage.removeItem('retronote_is_anon');
-                if (loggedUser !== 'Anônimo') await supabase.auth.signOut();
-                setLoggedUser(null);
-              }
-            }}
-            onLogin={() => {
-              const vw = window.innerWidth;
-              openWindow('login', 'Identificação - RetroNote', { type: 'login' }, { x: vw / 2 - 200, y: 60, width: 400, height: 320 });
-            }}
+            onLogout={handleLogout}
+            onLogin={handleOpenLogin}
           />
         )}
 
@@ -610,6 +649,8 @@ function App() {
             else minimizeWindow(id);
           }} 
           onWindowContextMenu={handleWindowContextMenu}
+          loggedUser={loggedUser}
+          onLogin={handleLogout}
         />
 
       </div>

@@ -298,8 +298,13 @@ export default function LoginWindow({
 
             {view === 'login' && (
               <div className="mt-auto pt-3 border-t border-[#dfdfdf] w-full flex justify-center text-[11px]">
-                <button type="button" className="w-[85%] bg-transparent border-0 underline text-blue-700 hover:text-blue-900 cursor-pointer text-[11px] font-bold" onClick={() => setShowAnonAlert(true)}>
-                  Entrar como Visitante (Sem conta)
+                <button 
+                  type="button" 
+                  className="w-[85%] bg-[#0053e5] text-white border border-[#003c9b] px-4 py-2 rounded shadow-md hover:bg-[#003c9b] transition-all cursor-pointer font-bold text-[13px] flex items-center justify-center gap-2" 
+                  onClick={() => setShowAnonAlert(true)}
+                  style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.5)' }}
+                >
+                  <span className="text-lg">👤</span> Entrar como Visitante
                 </button>
               </div>
             )}
