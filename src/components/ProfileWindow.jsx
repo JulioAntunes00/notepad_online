@@ -147,6 +147,19 @@ export default function ProfileWindow({
             </div>
           </form>
         </fieldset>
+
+        {/* Suporte Técnico */}
+        <div className="mt-4 p-3 bg-[#ffffcc] border border-[#aca899] rounded shadow-sm flex items-start gap-3">
+          <span className="text-2xl mt-[-2px]">❔</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold text-[#0038b3]">Ajuda e Suporte</span>
+            <p className="text-[10px] text-gray-700 m-0 leading-tight">
+              Problemas com sua conta ou arquivos? Entre em contato com nossa equipe técnica:
+              <br />
+              <a href="mailto:web.ti@live.com" className="text-blue-700 font-bold hover:underline">web.ti@live.com</a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
