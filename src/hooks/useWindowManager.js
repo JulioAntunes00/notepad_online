@@ -22,7 +22,8 @@ export default function useWindowManager(loggedUser) {
          const w = localStorage.getItem('retronote_windows');
          if (w) parsed = JSON.parse(w);
        } else if (loggedUser.id) {
-         const { data } = await supabase.from('retronote_windows').select('*').eq('user_id', loggedUser.id).single();
+         const { data, error } = await supabase.from('retronote_windows').select('*').eq('user_id', loggedUser.id).maybeSingle();
+         if (error && error.code !== 'PGRST116') console.error('[RetroNote] Erro ao carregar janelas:', error.message);
          if (data && data.windows_json) parsed = data.windows_json;
        }
        
