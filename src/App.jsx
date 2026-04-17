@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import useWindowManager from './hooks/useWindowManager';
 import useNotes from './hooks/useNotes';
+import useAdmin from './hooks/useAdmin';
 import Taskbar from './Taskbar';
 import DesktopIcon from './components/DesktopIcon';
 import NotepadWindow from './components/NotepadWindow';
@@ -12,6 +13,7 @@ import StartMenu from './components/StartMenu';
 import AboutWindow from './components/AboutWindow';
 import FolderWindow from './components/FolderWindow';
 import ProfileWindow from './components/ProfileWindow';
+import AdminPanelWindow from './components/AdminPanelWindow';
 
 const FOLDER_ICON = '/folder-closed.png';
 const NOTEPAD_ICON = '/Notepad.png';
@@ -20,6 +22,7 @@ const TRASH_EMPTY_ICON = '/lixeira-vazia.png';
 const TRASH_FULL_ICON = '/lixeira-cheia.png';
 const USER_ICON = '/Power.png';
 const PROFILE_ICON = '/Help and Support.png';
+const ADMIN_ICON = '/admin-panel.png';
 
 function App() {
   const [loggedUser, setLoggedUser] = useState(null);
@@ -36,6 +39,8 @@ function App() {
     minimizeWindow, restoreWindow, toggleMaximize,
     focusWindow, updateWindow,
   } = useWindowManager(loggedUser);
+
+  const { isAdmin } = useAdmin(loggedUser);
 
   const [activeMenu, setActiveMenu] = useState(null); // { id, x, y }
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
@@ -396,6 +401,26 @@ ${isAnon ?
               onContextMenu={(pos) => setActiveMenu({ id: 'profile', ...pos })}
             />
           )}
+
+          {isAdmin && (
+            <DesktopIcon
+              label="Painel Admin"
+              iconSrc={ADMIN_ICON}
+              onClick={() => {
+                const existing = windows.find(w => w.type === 'admin');
+                if (existing) {
+                  focusWindow(existing.id);
+                  restoreWindow(existing.id);
+                } else {
+                  const vw = window.innerWidth;
+                  const vh = window.innerHeight;
+                  openWindow('admin', 'Painel de Controle — Usuários', { type: 'admin' }, { x: vw / 2 - 420, y: vh / 2 - 300, width: 840, height: 600 });
+                }
+              }}
+              menuPos={activeMenu?.id === 'admin' ? activeMenu : null}
+              onContextMenu={(pos) => setActiveMenu({ id: 'admin', ...pos })}
+            />
+          )}
         </div>
 
         {/* Camada de Janelas */}
@@ -506,6 +531,22 @@ ${isAnon ?
                 key={win.id}
                 windowData={win}
                 onClose={closeWindow}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                loggedUser={loggedUser}
+                onShowAlert={handleShowAlert}
+              />
+            );
+          }
+
+          if (win.type === 'admin' && loggedUser && isAdmin) {
+            return (
+              <AdminPanelWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
                 onFocus={focusWindow}
                 onUpdate={updateWindow}
                 loggedUser={loggedUser}
