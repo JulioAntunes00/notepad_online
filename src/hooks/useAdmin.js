@@ -12,6 +12,7 @@ export default function useAdmin(loggedUser) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userNotes, setUserNotes] = useState([]);
   const [userFolders, setUserFolders] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,6 +24,7 @@ export default function useAdmin(loggedUser) {
       setSelectedUser(null);
       setUserNotes([]);
       setUserFolders([]);
+      setSuggestions([]);
       return;
     }
 
@@ -54,6 +56,22 @@ export default function useAdmin(loggedUser) {
     } catch (err) {
       setError('Erro ao carregar usuários: ' + err.message);
       setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Listar todas as sugestões
+  const fetchSuggestions = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error: rpcErr } = await supabase.rpc('admin_list_suggestions');
+      if (rpcErr) throw rpcErr;
+      setSuggestions(data || []);
+    } catch (err) {
+      setError('Erro ao carregar sugestões: ' + err.message);
+      setSuggestions([]);
     } finally {
       setLoading(false);
     }
@@ -127,17 +145,35 @@ export default function useAdmin(loggedUser) {
     }
   }, [selectedUser]);
 
+  // Excluir sugestão
+  const deleteSuggestion = useCallback(async (suggestionId) => {
+    try {
+      const { error: rpcErr } = await supabase.rpc('admin_delete_suggestion', {
+        target_id: suggestionId,
+      });
+      if (rpcErr) throw rpcErr;
+
+      setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
   return {
     isAdmin,
     users,
     selectedUser,
     userNotes,
     userFolders,
+    suggestions,
     loading,
     error,
     fetchUsers,
+    fetchSuggestions,
     selectUser,
     changeUserPassword,
     deleteUser,
+    deleteSuggestion,
   };
 }

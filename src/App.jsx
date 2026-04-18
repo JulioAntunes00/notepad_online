@@ -15,6 +15,7 @@ import AboutWindow from './components/AboutWindow';
 import FolderWindow from './components/FolderWindow';
 import ProfileWindow from './components/ProfileWindow';
 import AdminPanelWindow from './components/AdminPanelWindow';
+import OutlookExpressWindow from './components/OutlookExpressWindow';
 
 const FOLDER_ICON = '/folder-closed.png';
 const NOTEPAD_ICON = '/Notepad.png';
@@ -24,6 +25,7 @@ const TRASH_FULL_ICON = '/lixeira-cheia.png';
 const USER_ICON = '/Power.png';
 const PROFILE_ICON = '/Help and Support.png';
 const ADMIN_ICON = '/admin-panel.png';
+const EMAIL_ICON = '/Email.png';
 
 function App() {
   const { t } = useTranslation();
@@ -347,6 +349,29 @@ ${isAnon ?
           </div>
         </div>
 
+        {/* Ícone de Sugestões no canto inferior esquerdo */}
+        {loggedUser && (
+          <div className="absolute bottom-12 left-4">
+            <DesktopIcon
+              label={t('desktop.suggestions')}
+              iconSrc={EMAIL_ICON}
+              onClick={() => {
+                const existing = windows.find(w => w.type === 'outlook');
+                if (existing) {
+                  focusWindow(existing.id);
+                  restoreWindow(existing.id);
+                } else {
+                  const vw = window.innerWidth;
+                  const vh = window.innerHeight;
+                  openWindow('outlook', t('outlookWindow.title'), { type: 'outlook' }, { x: vw / 2 - 300, y: vh / 2 - 240, width: 600, height: 480 });
+                }
+              }}
+              menuPos={activeMenu?.id === 'outlook' ? activeMenu : null}
+              onContextMenu={(pos) => setActiveMenu({ id: 'outlook', ...pos })}
+            />
+          </div>
+        )}
+
         {/* Ícone de Login/Sair no topo direito com Sobre o Site ao lado */}
         <div className="absolute top-4 right-4 flex items-start gap-2">
           <DesktopIcon
@@ -535,6 +560,22 @@ ${isAnon ?
           if (win.type === 'admin' && loggedUser && isAdmin) {
             return (
               <AdminPanelWindow
+                key={win.id}
+                windowData={win}
+                onClose={closeWindow}
+                onMinimize={minimizeWindow}
+                onToggleMaximize={toggleMaximize}
+                onFocus={focusWindow}
+                onUpdate={updateWindow}
+                loggedUser={loggedUser}
+                onShowAlert={handleShowAlert}
+              />
+            );
+          }
+
+          if (win.type === 'outlook' && loggedUser) {
+            return (
+              <OutlookExpressWindow
                 key={win.id}
                 windowData={win}
                 onClose={closeWindow}

@@ -8,7 +8,8 @@
     "logout": "Sair",
     "logoutVisitor": "Sair (Visitante)",
     "login": "Login",
-    "notepad": "Bloco de Notas"
+    "notepad": "Bloco de Notas",
+    "suggestions": "Sugestões"
   },
   "visitor": {
     "title": "Modo Visitante",
@@ -189,5 +190,21 @@
     "close": "Fechar",
     "helpTitle": "Ajuda e Suporte",
     "helpText": "Problemas com sua conta ou arquivos? Entre em contato com nossa equipe técnica:"
+  },
+  "outlookWindow": {
+    "title": "Sugestões - Outlook Express",
+    "to": "Para:",
+    "subject": "Assunto:",
+    "subjectPlaceholder": "Ex: Gostaria de ter um tema escuro",
+    "bodyPlaceholder": "Escreva aqui sua sugestão, ideia ou feedback...\n\nO que você gostaria de ver no RetroNote XP?",
+    "sendBtn": "Enviar",
+    "sending": "Enviando...",
+    "discard": "Descartar",
+    "statusReady": "Pronto",
+    "error": "Erro",
+    "fillFields": "Preencha o assunto e a mensagem antes de enviar.",
+    "sendError": "Não foi possível enviar sua sugestão. Tente novamente.",
+    "sentSuccess": "Sugestão enviada com sucesso!",
+    "sentSubtext": "Obrigado pelo seu feedback. Esta janela será fechada automaticamente."
   }
 }
